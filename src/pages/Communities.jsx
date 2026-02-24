@@ -33,6 +33,7 @@ export default function Communities() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showCreate, setShowCreate] = useState(false);
     const [creating, setCreating] = useState(false);
+    const [catDropdownOpen, setCatDropdownOpen] = useState(false);
     const [newCommunity, setNewCommunity] = useState({
         name: '', description: '', category: '', color: '#A3FF12'
     });
@@ -264,14 +265,37 @@ export default function Communities() {
 
                                 <div>
                                     <label className="block text-white/60 text-sm mb-1.5">{t('communities.categoryLabel') || 'Категория'}</label>
-                                    <select value={newCommunity.category}
-                                        onChange={e => setNewCommunity(p => ({ ...p, category: e.target.value }))}
-                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-neon/40">
-                                        <option value="">{t('communities.selectCategory') || 'Выберите категорию'}</option>
-                                        {COMMUNITY_CATEGORIES.map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative">
+                                        <button type="button"
+                                            onClick={() => setCatDropdownOpen(!catDropdownOpen)}
+                                            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-left focus:outline-none focus:border-neon/40 flex items-center justify-between"
+                                            style={{ color: newCommunity.category ? '#fff' : 'rgba(255,255,255,0.25)' }}>
+                                            <span>{newCommunity.category || t('communities.selectCategory') || 'Выберите категорию'}</span>
+                                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.4)" strokeWidth="2"
+                                                className={`transition-transform ${catDropdownOpen ? 'rotate-180' : ''}`}>
+                                                <polyline points="6,9 12,15 18,9" />
+                                            </svg>
+                                        </button>
+                                        {catDropdownOpen && (
+                                            <>
+                                                <div className="fixed inset-0 z-10" onClick={() => setCatDropdownOpen(false)} />
+                                                <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#1a1a2e] border border-white/10 rounded-xl overflow-hidden shadow-xl max-h-52 overflow-y-auto">
+                                                    <button type="button"
+                                                        onClick={() => { setNewCommunity(p => ({ ...p, category: '' })); setCatDropdownOpen(false); }}
+                                                        className="w-full px-4 py-2.5 text-left text-sm text-white/40 hover:bg-white/5 transition-colors">
+                                                        {t('communities.selectCategory') || 'Выберите категорию'}
+                                                    </button>
+                                                    {COMMUNITY_CATEGORIES.map(cat => (
+                                                        <button key={cat} type="button"
+                                                            onClick={() => { setNewCommunity(p => ({ ...p, category: cat })); setCatDropdownOpen(false); }}
+                                                            className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${newCommunity.category === cat ? 'bg-neon/10 text-neon' : 'text-white hover:bg-white/5'}`}>
+                                                            {cat}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div>
