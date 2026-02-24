@@ -1155,27 +1155,19 @@ app.post('/api/barter/reject', auth, (req, res) => {
 // Get all communities
 app.get('/api/communities', auth, (req, res) => {
     try {
-        const rows = db.exec(`
-            SELECT c.*, u.name as creatorName, u.avatarUrl as creatorAvatar,
-            (SELECT COUNT(*) FROM community_members WHERE communityId = c.id) as memberCount
+        const communities = queryAll(`
+            SELECT c.id, c.name, c.description, c.category, c.avatarUrl, c.color, c.createdBy, c.createdAt,
+            (SELECT COUNT(*) FROM community_members WHERE communityId = c.id) as memberCount,
+            (SELECT name FROM users WHERE id = c.createdBy) as creatorName,
+            (SELECT avatarUrl FROM users WHERE id = c.createdBy) as creatorAvatar
             FROM communities c
-            LEFT JOIN users u ON c.createdBy = u.id
             ORDER BY memberCount DESC, c.createdAt DESC
         `);
-        const communities = rows.length > 0 ? rows[0].values.map(r => ({
-            id: r[0], name: r[1], description: r[2], category: r[3],
-            avatarUrl: r[4], color: r[5], createdBy: r[6],
-            memberCount: r[7], createdAt: r[8],
-            creatorName: r[9], creatorAvatar: r[10],
-            actualMemberCount: r[11]
-        })) : [];
 
-        // Check membership for current user
         for (const c of communities) {
             const member = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [c.id, req.userId]);
             c.isMember = !!member;
             c.role = member?.role || null;
-            c.memberCount = c.actualMemberCount;
         }
 
         res.json({ communities });
@@ -1188,19 +1180,19 @@ app.get('/api/communities', auth, (req, res) => {
 // Get my communities
 app.get('/api/communities/my', auth, (req, res) => {
     try {
-        const rows = db.exec(`
-            SELECT c.*, cm.role,
+        const communities = queryAll(`
+            SELECT c.id, c.name, c.description, c.category, c.avatarUrl, c.color, c.createdBy, c.createdAt,
+            cm.role,
             (SELECT COUNT(*) FROM community_members WHERE communityId = c.id) as memberCount
             FROM communities c
-            JOIN community_members cm ON c.id = cm.communityId AND cm.userId = '${req.userId}'
+            JOIN community_members cm ON c.id = cm.communityId AND cm.userId = ?
             ORDER BY cm.joinedAt DESC
-        `);
-        const communities = rows.length > 0 ? rows[0].values.map(r => ({
-            id: r[0], name: r[1], description: r[2], category: r[3],
-            avatarUrl: r[4], color: r[5], createdBy: r[6],
-            memberCount: r[11], createdAt: r[8],
-            role: r[9], isMember: true
-        })) : [];
+        `, [req.userId]);
+
+        for (const c of communities) {
+            c.isMember = true;
+        }
+
         res.json({ communities });
     } catch (err) {
         console.error('My communities error:', err);
@@ -1217,31 +1209,25 @@ app.get('/api/communities/recommended', auth, (req, res) => {
             userSkills = [...JSON.parse(user?.teachSkills || '[]'), ...JSON.parse(user?.learnSkills || '[]')];
         } catch { }
 
-        const rows = db.exec(`
-            SELECT c.*,
+        const communities = queryAll(`
+            SELECT c.id, c.name, c.description, c.category, c.avatarUrl, c.color, c.createdBy, c.createdAt,
             (SELECT COUNT(*) FROM community_members WHERE communityId = c.id) as memberCount
             FROM communities c
-            WHERE c.id NOT IN (SELECT communityId FROM community_members WHERE userId = '${req.userId}')
+            WHERE c.id NOT IN (SELECT communityId FROM community_members WHERE userId = ?)
             ORDER BY memberCount DESC
-        `);
-        let communities = rows.length > 0 ? rows[0].values.map(r => ({
-            id: r[0], name: r[1], description: r[2], category: r[3],
-            avatarUrl: r[4], color: r[5], createdBy: r[6],
-            memberCount: r[11], createdAt: r[8],
-            isMember: false
-        })) : [];
+        `, [req.userId]);
 
         // Score by skill match
-        communities = communities.map(c => {
-            const nameAndDesc = (c.name + ' ' + c.description + ' ' + c.category).toLowerCase();
+        const scored = communities.map(c => {
+            const nameAndDesc = (c.name + ' ' + (c.description || '') + ' ' + (c.category || '')).toLowerCase();
             let score = 0;
             for (const skill of userSkills) {
                 if (nameAndDesc.includes(skill.toLowerCase())) score += 10;
             }
-            return { ...c, matchScore: score };
+            return { ...c, matchScore: score, isMember: false };
         }).sort((a, b) => b.matchScore - a.matchScore || b.memberCount - a.memberCount);
 
-        res.json({ communities: communities.slice(0, 10) });
+        res.json({ communities: scored.slice(0, 10) });
     } catch (err) {
         console.error('Recommended communities error:', err);
         res.status(500).json({ error: err.message });
@@ -1277,16 +1263,13 @@ app.get('/api/communities/:id', auth, (req, res) => {
         if (!c) return res.status(404).json({ error: 'Community not found' });
 
         // Get members
-        const membersRows = db.exec(`
+        const members = queryAll(`
             SELECT cm.userId, cm.role, cm.joinedAt, u.name, u.avatarUrl, u.university
             FROM community_members cm
             JOIN users u ON cm.userId = u.id
-            WHERE cm.communityId = '${req.params.id}'
+            WHERE cm.communityId = ?
             ORDER BY CASE cm.role WHEN 'ceo' THEN 0 ELSE 1 END, cm.joinedAt ASC
-        `);
-        const members = membersRows.length > 0 ? membersRows[0].values.map(r => ({
-            userId: r[0], role: r[1], joinedAt: r[2], name: r[3], avatarUrl: r[4], university: r[5]
-        })) : [];
+        `, [req.params.id]);
 
         const myMember = members.find(m => m.userId === req.userId);
 
@@ -1308,7 +1291,7 @@ app.get('/api/communities/:id', auth, (req, res) => {
 // Join community
 app.post('/api/communities/:id/join', auth, (req, res) => {
     try {
-        const existing = queryOne('SELECT * FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        const existing = queryOne('SELECT id FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
         if (existing) return res.status(400).json({ error: 'Already a member' });
 
         db.run(`INSERT INTO community_members (id, communityId, userId, role) VALUES (?, ?, ?, 'member')`,
@@ -1356,23 +1339,18 @@ app.post('/api/communities/:id/kick/:userId', auth, (req, res) => {
 // Community chat messages
 app.get('/api/communities/:id/messages', auth, (req, res) => {
     try {
-        // Verify membership
         const member = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
         if (!member) return res.status(403).json({ error: 'Not a member' });
 
-        const rows = db.exec(`
-            SELECT cm.id, cm.senderId, cm.text, cm.createdAt, u.name, u.avatarUrl,
-            (SELECT role FROM community_members WHERE communityId = '${req.params.id}' AND userId = cm.senderId) as senderRole
+        const messages = queryAll(`
+            SELECT cm.id, cm.senderId, cm.text, cm.createdAt, u.name as senderName, u.avatarUrl as senderAvatar,
+            (SELECT role FROM community_members WHERE communityId = ? AND userId = cm.senderId) as senderRole
             FROM community_messages cm
             JOIN users u ON cm.senderId = u.id
-            WHERE cm.communityId = '${req.params.id}'
+            WHERE cm.communityId = ?
             ORDER BY cm.createdAt ASC
             LIMIT 200
-        `);
-        const messages = rows.length > 0 ? rows[0].values.map(r => ({
-            id: r[0], senderId: r[1], text: r[2], createdAt: r[3],
-            senderName: r[4], senderAvatar: r[5], senderRole: r[6]
-        })) : [];
+        `, [req.params.id, req.params.id]);
 
         res.json({ messages });
     } catch (err) {
@@ -1395,12 +1373,12 @@ app.post('/api/communities/:id/messages', auth, (req, res) => {
             [id, req.params.id, req.userId, text.trim()]);
         saveDB();
 
-        const user = queryOne('SELECT name, avatarUrl FROM users WHERE id = ?', [req.userId]);
+        const u = queryOne('SELECT name, avatarUrl FROM users WHERE id = ?', [req.userId]);
         res.json({
             message: {
                 id, senderId: req.userId, text: text.trim(),
                 createdAt: new Date().toISOString(),
-                senderName: user?.name, senderAvatar: user?.avatarUrl,
+                senderName: u?.name, senderAvatar: u?.avatarUrl,
                 senderRole: member.role
             }
         });
