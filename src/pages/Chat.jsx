@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RocketIcon, SendIcon, MicIcon, PaperclipIcon, ImageIcon, FileIcon, PlayIcon, PauseIcon, PencilIcon, TrashIcon } from '../components/Icons';
+import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 export default function Chat() {
     const { user, apiFetch, refreshUnreadCount } = useAuth();
@@ -427,7 +428,7 @@ export default function Chat() {
                                 >
                                     <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-sm font-bold border border-white/10">
                                         {c.partner.avatarUrl ? (
-                                            <img src={c.partner.avatarUrl} alt={c.partner.name} className="w-full h-full object-cover" />
+                                            <img src={resolveFileUrl(c.partner.avatarUrl)} alt={c.partner.name} className="w-full h-full object-cover" />
                                         ) : (
                                             c.partner.name[0]
                                         )}
@@ -473,7 +474,7 @@ export default function Chat() {
                                     >
                                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden bg-gradient-to-br from-neon/20 to-purple-500/20 flex items-center justify-center font-bold border border-neon/30 text-xs md:text-base group-hover:border-neon transition-colors">
                                             {activePartner?.avatarUrl ? (
-                                                <img src={activePartner.avatarUrl} alt={activePartner.name} className="w-full h-full object-cover" />
+                                                <img src={resolveFileUrl(activePartner.avatarUrl)} alt={activePartner.name} className="w-full h-full object-cover" />
                                             ) : (
                                                 activePartner?.name?.[0]
                                             )}
@@ -599,7 +600,7 @@ export default function Chat() {
                                                     </div>
                                                 ) : m.type === 'image' ? (
                                                     <div className="space-y-2">
-                                                        <img src={m.fileUrl} alt="Attached" className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(m.fileUrl)} />
+                                                        <img src={resolveFileUrl(m.fileUrl)} alt="Attached" className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(resolveFileUrl(m.fileUrl))} />
                                                         {m.text && <p>{m.text}</p>}
                                                     </div>
                                                 ) : m.type === 'voice' ? (
@@ -627,10 +628,10 @@ export default function Chat() {
                                                                 transition={{ duration: 10, ease: 'linear' }} // Mocking duration for now
                                                             />
                                                         </div>
-                                                        <audio id={`audio-${m.id}`} src={m.fileUrl} onEnded={() => setAudioPlaying(null)} className="hidden" />
+                                                        <audio id={`audio-${m.id}`} src={resolveFileUrl(m.fileUrl)} onEnded={() => setAudioPlaying(null)} className="hidden" />
                                                     </div>
                                                 ) : m.type === 'file' ? (
-                                                    <a href={m.fileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-2 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5">
+                                                    <a href={resolveFileUrl(m.fileUrl)} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-2 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5">
                                                         <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-white/60">
                                                             <FileIcon size={20} />
                                                         </div>

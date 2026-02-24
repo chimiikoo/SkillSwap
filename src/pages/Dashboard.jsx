@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { SkillIcon } from '../components/Icons';
+import { resolveFileUrl } from '../utils/resolveFileUrl';
 import {
     CoinIcon, StarIcon, BrainIcon, SearchIcon, RocketIcon, SparklesIcon,
 } from '../components/Icons';
@@ -248,7 +249,7 @@ function MatchCard({ match }) {
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl overflow-hidden bg-neon/10 border border-neon/20 flex items-center justify-center text-neon font-bold group-hover:shadow-neon transition-all duration-500">
                         {match.avatarUrl ? (
-                            <img src={match.avatarUrl} alt={match.name} className="w-full h-full object-cover" />
+                            <img src={resolveFileUrl(match.avatarUrl)} alt={match.name} className="w-full h-full object-cover" />
                         ) : (
                             match.name?.charAt(0)
                         )}

@@ -6,6 +6,7 @@ import { motion, useInView } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
 import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon } from '../components/Icons';
 import { UNIVERSITIES } from '../data/universities';
+import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -111,7 +112,7 @@ export default function Profile() {
                     <div className="relative group">
                         <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-neon/20 bg-white/5 shadow-neon/10 group-hover:border-neon transition-all duration-300">
                             {user?.avatarUrl ? (
-                                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                                <img src={resolveFileUrl(user.avatarUrl)} alt={user.name} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-neon/5">
                                     <UserIcon size={40} />

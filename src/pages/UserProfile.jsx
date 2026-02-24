@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { SkillIcon, StarIcon, SparklesIcon, ShieldCheckIcon } from '../components/Icons';
+import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 25 },
@@ -156,7 +157,7 @@ export default function UserProfile() {
                             className="w-20 h-20 rounded-2xl overflow-hidden bg-neon/10 border border-neon/20 flex items-center justify-center text-neon text-3xl font-bold"
                         >
                             {profile.avatarUrl ? (
-                                <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
+                                <img src={resolveFileUrl(profile.avatarUrl)} alt={profile.name} className="w-full h-full object-cover" />
                             ) : (
                                 profile.name?.charAt(0)
                             )}

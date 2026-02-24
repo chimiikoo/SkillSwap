@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import LanguageSwitcher from './LanguageSwitcher';
+import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 export default function Navbar() {
     const { isAuthenticated, isAdmin, user, logout, unreadCount } = useAuth();
@@ -58,7 +59,7 @@ export default function Navbar() {
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-full overflow-hidden bg-neon/10 border border-neon/20 flex items-center justify-center text-neon text-sm font-bold">
                                             {user?.avatarUrl ? (
-                                                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                                                <img src={resolveFileUrl(user.avatarUrl)} alt={user.name} className="w-full h-full object-cover" />
                                             ) : (
                                                 user?.name?.charAt(0).toUpperCase()
                                             )}

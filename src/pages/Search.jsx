@@ -6,6 +6,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { SKILL_CATEGORIES, ALL_SKILLS } from '../data/skills';
 import { UNIVERSITIES } from '../data/universities';
 import { SkillIcon, SearchIcon, SparklesIcon, StarIcon } from '../components/Icons';
+import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 20 },
@@ -206,7 +207,7 @@ function UserCard({ user }) {
                     <div className="flex items-center gap-3">
                         <div className="w-11 h-11 rounded-xl overflow-hidden bg-neon/10 border border-neon/20 flex items-center justify-center text-neon font-bold text-lg group-hover:shadow-neon transition-all duration-500">
                             {user.avatarUrl ? (
-                                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                                <img src={resolveFileUrl(user.avatarUrl)} alt={user.name} className="w-full h-full object-cover" />
                             ) : (
                                 user.name?.charAt(0)
                             )}
