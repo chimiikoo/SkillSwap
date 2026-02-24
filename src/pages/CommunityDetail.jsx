@@ -100,17 +100,25 @@ export default function CommunityDetail() {
         if (!file) return;
         setUploading(true);
         try {
-            const token = localStorage.getItem('token');
-            const API = import.meta.env.VITE_API_URL || '';
+            const API_BASE = import.meta.env.VITE_API_URL || '/api';
             const formData = new FormData();
             formData.append('file', file);
-            const uploadRes = await fetch(`${API}/api/communities/${id}/upload`, {
+            const uploadRes = await fetch(`${API_BASE}/communities/${id}/upload`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('skillswap_token')}` },
                 body: formData
             });
+
+            if (!uploadRes.ok) {
+                const ct = uploadRes.headers.get('content-type');
+                if (ct && ct.includes('application/json')) {
+                    const errData = await uploadRes.json();
+                    throw new Error(errData.error || 'Upload failed');
+                }
+                throw new Error(`Server error: ${uploadRes.status}`);
+            }
+
             const uploadData = await uploadRes.json();
-            if (!uploadRes.ok) throw new Error(uploadData.error);
 
             const data = await apiFetch(`/communities/${id}/messages`, {
                 method: 'POST',
