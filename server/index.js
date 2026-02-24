@@ -963,16 +963,33 @@ app.post('/api/chat/send', auth, (req, res) => {
     const { receiverId, text, type, fileUrl, fileName, fileSize, duration } = req.body;
     const id = uuidv4();
 
+    const msgText = text || '';
+    const msgType = type || 'text';
+    const msgFileUrl = fileUrl || '';
+    const msgFileName = fileName || '';
+    const msgFileSize = fileSize || 0;
+    const msgDuration = duration || 0;
+
     db.run(`
         INSERT INTO messages (id, senderId, receiverId, text, type, fileUrl, fileName, fileSize, duration)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, req.userId, receiverId, text || '', type || 'text', fileUrl || '', fileName || '', fileSize || 0, duration || 0]);
+    `, [id, req.userId, receiverId, msgText, msgType, msgFileUrl, msgFileName, msgFileSize, msgDuration]);
 
     saveDB();
     res.json({
         success: true,
         message: {
-            id, senderId: req.userId, receiverId, text, type, fileUrl, fileName, fileSize, duration,
+            id,
+            senderId: req.userId,
+            receiverId,
+            text: msgText,
+            type: msgType,
+            fileUrl: msgFileUrl,
+            fileName: msgFileName,
+            fileSize: msgFileSize,
+            duration: msgDuration,
+            isRead: 0,
+            isEdited: 0,
             createdAt: new Date().toISOString()
         }
     });

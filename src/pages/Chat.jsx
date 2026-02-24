@@ -24,6 +24,7 @@ export default function Chat() {
     const mediaRecorder = useRef(null);
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
+    const recordingInterval = useRef(null);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
     const [audioPlaying, setAudioPlaying] = useState(null); // ID of playing message
@@ -45,6 +46,7 @@ export default function Chat() {
 
         return () => {
             if (chatInterval.current) clearInterval(chatInterval.current);
+            if (recordingInterval.current) clearInterval(recordingInterval.current);
         };
     }, []);
 
@@ -82,11 +84,17 @@ export default function Chat() {
                 loadHistory(activeChat, true); // silent update
             }, 3000);
         } else {
-            if (chatInterval.current) clearInterval(chatInterval.current);
+            if (chatInterval.current) {
+                clearInterval(chatInterval.current);
+                chatInterval.current = null;
+            }
         }
 
         return () => {
-            if (chatInterval.current) clearInterval(chatInterval.current);
+            if (chatInterval.current) {
+                clearInterval(chatInterval.current);
+                chatInterval.current = null;
+            }
         };
     }, [activeChat]);
 
@@ -120,23 +128,20 @@ export default function Chat() {
         if (!silent) setLoading(true);
         try {
             const data = await apiFetch(`/chat/history/${partnerId}`);
+            if (!data || !data.messages) {
+                if (!silent) setLoading(false);
+                return;
+            }
             setMessages(data.messages);
 
-            // If there were unread messages, refresh global count
-            if (data.messages.some(m => m.receiverId === user.id && !m.isRead)) {
+            // If there were unread messages, refresh global count (but don't reload conversations on every poll)
+            if (!silent && data.messages.some(m => m.receiverId === user.id && !m.isRead)) {
                 refreshUnreadCount();
-                // Also refresh conversations list to clear local dots
                 loadConversations();
             }
 
             // Update barter status
             if (data.activeSession) {
-                // Determine status based on confirmation
-                // status can be 'offered', 'active', 'pending'
-                // If 'offered':
-                //   if requesterConfirmed && !providerConfirmed -> I started it (waiting) OR partner started it (needs action)
-                //   We need to know WHO is requester
-
                 const s = data.activeSession;
                 let status = s.status;
 
@@ -159,7 +164,7 @@ export default function Chat() {
 
             if (!silent) setLoading(false);
         } catch (err) {
-            console.error(err);
+            console.error('loadHistory error:', err);
             if (!silent) setLoading(false);
         }
     };
@@ -201,24 +206,28 @@ export default function Chat() {
 
     const sendMessage = async (e) => {
         e.preventDefault();
-        if (!newMessage.trim() || !activeChat) return;
+        const text = newMessage.trim();
+        if (!text || !activeChat) return;
+
+        setNewMessage(''); // optimistic clear
 
         try {
-            const text = newMessage;
-            setNewMessage(''); // optimistic clear
-
             const res = await apiFetch('/chat/send', {
                 method: 'POST',
                 body: JSON.stringify({ receiverId: activeChat, text })
             });
 
-            // Add locally immediately or wait for poll? Best to add locally
-            setMessages(prev => [...prev, res.message]);
+            if (res && res.message) {
+                // Add locally immediately
+                setMessages(prev => [...prev, res.message]);
+            }
 
             // Refresh conversations list to update last message
             loadConversations();
         } catch (err) {
-            console.error(err);
+            console.error('sendMessage error:', err);
+            // Restore message on error so user can retry
+            setNewMessage(text);
         }
     };
 
@@ -244,16 +253,17 @@ export default function Chat() {
                     const errorData = await res.json();
                     throw new Error(errorData.error || 'Upload failed');
                 }
-                throw new Error(t('chat.serverError').replace('{status}', res.status));
+                throw new Error(t('chat.serverError')?.replace('{status}', res.status) || `Server error: ${res.status}`);
             }
 
             const uploadData = await res.json();
 
-            // Send the actual message
+            // Send the actual message with file info
             const msgRes = await apiFetch('/chat/send', {
                 method: 'POST',
                 body: JSON.stringify({
                     receiverId: activeChat,
+                    text: '',
                     type: uploadData.type,
                     fileUrl: uploadData.fileUrl,
                     fileName: uploadData.fileName,
@@ -261,12 +271,19 @@ export default function Chat() {
                 })
             });
 
-            setMessages(prev => [...prev, msgRes.message]);
+            if (msgRes && msgRes.message) {
+                setMessages(prev => [...prev, msgRes.message]);
+            }
             loadConversations();
         } catch (err) {
-            alert(t('chat.uploadError') + err.message);
+            console.error('File upload error:', err);
+            alert((t('chat.uploadError') || 'Upload error: ') + err.message);
         } finally {
             setUploading(false);
+            // Reset file input so the same file can be selected again
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     };
 
@@ -287,10 +304,12 @@ export default function Chat() {
             mediaRecorder.current.start();
             setIsRecording(true);
             setRecordingTime(0);
-            const interval = setInterval(() => setRecordingTime(t => t + 1), 1000);
-            return () => clearInterval(interval);
+
+            // Clean up previous interval if any
+            if (recordingInterval.current) clearInterval(recordingInterval.current);
+            recordingInterval.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
         } catch (err) {
-            alert(t('chat.micUnavailable'));
+            alert(t('chat.micUnavailable') || 'Microphone unavailable');
         }
     };
 
@@ -298,6 +317,10 @@ export default function Chat() {
         if (mediaRecorder.current && isRecording) {
             mediaRecorder.current.stop();
             setIsRecording(false);
+            if (recordingInterval.current) {
+                clearInterval(recordingInterval.current);
+                recordingInterval.current = null;
+            }
         }
     };
 
@@ -637,7 +660,12 @@ export default function Chat() {
                                         type="file"
                                         ref={fileInputRef}
                                         className="hidden"
-                                        onChange={e => handleFileUpload(e.target.files[0])}
+                                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+                                        onChange={e => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                handleFileUpload(e.target.files[0]);
+                                            }
+                                        }}
                                     />
 
                                     <button
