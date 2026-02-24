@@ -165,7 +165,11 @@ async function initDB() {
       id TEXT PRIMARY KEY,
       communityId TEXT NOT NULL,
       senderId TEXT NOT NULL,
-      text TEXT NOT NULL,
+      text TEXT DEFAULT '',
+      type TEXT DEFAULT 'text',
+      fileUrl TEXT DEFAULT '',
+      fileName TEXT DEFAULT '',
+      fileSize INTEGER DEFAULT 0,
       createdAt TEXT DEFAULT (datetime('now'))
     )
   `);
@@ -178,6 +182,13 @@ async function initDB() {
         db.run('ALTER TABLE messages ADD COLUMN fileSize INTEGER DEFAULT 0');
         db.run('ALTER TABLE messages ADD COLUMN duration REAL DEFAULT 0');
         db.run('ALTER TABLE messages ADD COLUMN isEdited INTEGER DEFAULT 0');
+    } catch (e) { }
+    // community_messages migration
+    try {
+        db.run('ALTER TABLE community_messages ADD COLUMN type TEXT DEFAULT "text"');
+        db.run('ALTER TABLE community_messages ADD COLUMN fileUrl TEXT DEFAULT ""');
+        db.run('ALTER TABLE community_messages ADD COLUMN fileName TEXT DEFAULT ""');
+        db.run('ALTER TABLE community_messages ADD COLUMN fileSize INTEGER DEFAULT 0');
     } catch (e) { }
 
     saveDB();
@@ -1343,7 +1354,8 @@ app.get('/api/communities/:id/messages', auth, (req, res) => {
         if (!member) return res.status(403).json({ error: 'Not a member' });
 
         const messages = queryAll(`
-            SELECT cm.id, cm.senderId, cm.text, cm.createdAt, u.name as senderName, u.avatarUrl as senderAvatar,
+            SELECT cm.id, cm.senderId, cm.text, cm.type, cm.fileUrl, cm.fileName, cm.fileSize, cm.createdAt,
+            u.name as senderName, u.avatarUrl as senderAvatar,
             (SELECT role FROM community_members WHERE communityId = ? AND userId = cm.senderId) as senderRole
             FROM community_messages cm
             JOIN users u ON cm.senderId = u.id
@@ -1359,24 +1371,48 @@ app.get('/api/communities/:id/messages', auth, (req, res) => {
     }
 });
 
-// Send community message
+// Upload file in community chat
+app.post('/api/communities/:id/upload', auth, upload.single('file'), (req, res) => {
+    try {
+        const member = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        if (!member) return res.status(403).json({ error: 'Not a member' });
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+        const fileUrl = `/api/uploads/${req.file.filename}`;
+        const type = req.file.mimetype.startsWith('image/') ? 'image' : 'file';
+        res.json({
+            fileUrl,
+            fileName: req.file.originalname,
+            fileSize: req.file.size,
+            type
+        });
+    } catch (err) {
+        console.error('Community upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Send community message (with optional file)
 app.post('/api/communities/:id/messages', auth, (req, res) => {
     try {
         const member = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
         if (!member) return res.status(403).json({ error: 'Not a member' });
 
-        const { text } = req.body;
-        if (!text || !text.trim()) return res.status(400).json({ error: 'Text required' });
+        const { text, type, fileUrl, fileName, fileSize } = req.body;
+        const msgText = text || '';
+        const msgType = type || 'text';
+        if (msgType === 'text' && !msgText.trim()) return res.status(400).json({ error: 'Text required' });
 
         const id = uuidv4();
-        db.run('INSERT INTO community_messages (id, communityId, senderId, text) VALUES (?, ?, ?, ?)',
-            [id, req.params.id, req.userId, text.trim()]);
+        db.run('INSERT INTO community_messages (id, communityId, senderId, text, type, fileUrl, fileName, fileSize) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, req.params.id, req.userId, msgText.trim(), msgType, fileUrl || '', fileName || '', fileSize || 0]);
         saveDB();
 
         const u = queryOne('SELECT name, avatarUrl FROM users WHERE id = ?', [req.userId]);
         res.json({
             message: {
-                id, senderId: req.userId, text: text.trim(),
+                id, senderId: req.userId, text: msgText.trim(),
+                type: msgType, fileUrl: fileUrl || '', fileName: fileName || '', fileSize: fileSize || 0,
                 createdAt: new Date().toISOString(),
                 senderName: u?.name, senderAvatar: u?.avatarUrl,
                 senderRole: member.role

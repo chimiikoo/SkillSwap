@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
@@ -41,9 +41,11 @@ function ScrollSection({ children, className = '' }) {
 export default function Dashboard() {
     const { user, apiFetch } = useAuth();
     const { t } = useLanguage();
+    const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [matches, setMatches] = useState([]);
     const [sessions, setSessions] = useState([]);
+    const [recCommunities, setRecCommunities] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -67,6 +69,11 @@ export default function Dashboard() {
         } finally {
             setLoading(false);
         }
+        // Load recommended communities
+        try {
+            const commData = await apiFetch('/communities/recommended');
+            setRecCommunities(commData?.communities || []);
+        } catch { }
     };
 
     if (loading) {
@@ -189,6 +196,39 @@ export default function Dashboard() {
                     )}
                 </ScrollSection>
 
+                {/* Recommended Communities */}
+                {recCommunities.length > 0 && (
+                    <ScrollSection className="mb-10">
+                        <motion.div variants={fadeUp} className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#A3FF12" strokeWidth="1.8">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                                {t('communities.recommended') || '⚡ AI Сообщества'}
+                            </h2>
+                            <Link to="/communities" className="text-neon text-sm hover:underline flex items-center gap-1">
+                                {t('dashboard.allResults') || 'Все'}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                            </Link>
+                        </motion.div>
+
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {recCommunities.slice(0, 6).map((c, i) => (
+                                <motion.div key={c.id} variants={fadeUp} custom={i}>
+                                    <CommunityCard community={c} onJoin={async () => {
+                                        try {
+                                            await apiFetch(`/communities/${c.id}/join`, { method: 'POST' });
+                                            navigate(`/community/${c.id}`);
+                                        } catch (err) { alert(err.message); }
+                                    }} />
+                                </motion.div>
+                            ))}
+                        </div>
+                    </ScrollSection>
+                )}
+
                 {/* Upcoming Sessions */}
                 <ScrollSection>
                     <motion.div variants={fadeUp} className="flex items-center justify-between mb-6">
@@ -280,6 +320,59 @@ function MatchCard({ match }) {
                 <p className="text-white/30 text-xs line-clamp-2">{match.reason}</p>
             )}
         </Link>
+    );
+}
+
+function CommunityCard({ community: c, onJoin }) {
+    const themeColor = c.color || '#A3FF12';
+    const scoreBg = c.matchScore >= 30 ? 'from-green-500/20 to-green-500/5 border-green-500/20 text-green-400'
+        : c.matchScore > 0 ? 'from-neon/20 to-neon/5 border-neon/20 text-neon'
+            : 'from-white/10 to-white/5 border-white/10 text-white/60';
+
+    return (
+        <div className="glass-card-hover p-5 block group">
+            <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-lg font-bold border"
+                        style={{ backgroundColor: themeColor + '15', borderColor: themeColor + '30', color: themeColor }}>
+                        {c.avatarUrl ? (
+                            <img src={resolveFileUrl(c.avatarUrl)} alt="" className="w-full h-full object-cover" />
+                        ) : c.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <div>
+                        <Link to={`/community/${c.id}`} className="font-medium text-sm group-hover:text-neon transition-colors">
+                            {c.name}
+                        </Link>
+                        <p className="text-white/30 text-xs flex items-center gap-1">
+                            <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                            </svg>
+                            {c.memberCount || 0}
+                        </p>
+                    </div>
+                </div>
+                {c.matchScore > 0 && (
+                    <div className={`px-2.5 py-1 rounded-lg bg-gradient-to-r ${scoreBg} text-xs font-bold border`}>
+                        ⚡{c.matchScore}
+                    </div>
+                )}
+            </div>
+
+            <div className="flex items-center gap-2 mb-3">
+                {c.category && (
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-white/5 text-white/50 border border-white/5">{c.category}</span>
+                )}
+            </div>
+
+            {c.description && (
+                <p className="text-white/30 text-xs line-clamp-2 mb-3">{c.description}</p>
+            )}
+
+            <button onClick={onJoin}
+                className="w-full py-2 bg-neon/10 text-neon rounded-lg text-xs font-semibold hover:bg-neon/20 transition-all border border-neon/20">
+                Вступить
+            </button>
+        </div>
     );
 }
 
