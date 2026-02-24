@@ -262,7 +262,10 @@ function adminAuth(req, res, next) {
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, // use SSL
+    secure: true,
+    connectionTimeout: 10000, // 10 sec
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -328,8 +331,10 @@ app.post('/api/auth/register', async (req, res) => {
 
         saveDB();
 
-        // Send email (async, don't block response too long, but await is safer for now)
-        await sendVerificationEmail(email, verificationCode);
+        // Send email in background (don't block response)
+        sendVerificationEmail(email, verificationCode).catch(err => {
+            console.error('Background email send failed:', err.message);
+        });
 
         res.json({ message: 'Code sent', email });
     } catch (err) {
