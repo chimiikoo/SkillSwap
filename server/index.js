@@ -258,6 +258,10 @@ function adminAuth(req, res, next) {
 }
 
 
+// Force IPv4 for SMTP connections (Render doesn't support IPv6)
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
+
 // Email configuration — create transporter lazily to ensure env vars are loaded
 let transporter = null;
 
@@ -281,6 +285,9 @@ function getTransporter() {
             },
             tls: {
                 rejectUnauthorized: false
+            },
+            dnsOptions: {
+                family: 4  // Force IPv4
             },
             debug: true,
             logger: false
