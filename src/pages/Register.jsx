@@ -39,13 +39,20 @@ export default function Register() {
         learnSkills: [],
     });
 
+    const [emailFailed, setEmailFailed] = useState(false);
+
     const handleSubmit = async () => {
         setError('');
         setLoading(true);
 
         if (step === 3) {
             try {
-                await register(form);
+                const result = await register(form);
+                // If server returned the code (email failed), auto-fill it
+                if (result?.code) {
+                    setCode(result.code);
+                    setEmailFailed(true);
+                }
                 setStep(4);
             } catch (err) {
                 setError(err.message);
@@ -390,6 +397,12 @@ export default function Register() {
                                         {t('register.codeSent')} <span className="text-white">{form.email}</span>
                                     </p>
                                 </div>
+
+                                {emailFailed && (
+                                    <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-4 py-3 rounded-xl text-sm">
+                                        ⚠️ Email не был доставлен. Код подтверждения подставлен автоматически — просто нажмите «Подтвердить».
+                                    </div>
+                                )}
 
                                 <div className="max-w-[200px] mx-auto">
                                     <input

@@ -258,31 +258,60 @@ function adminAuth(req, res, next) {
 }
 
 
-// Email configuration
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    connectionTimeout: 10000, // 10 sec
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
+// Email configuration — create transporter lazily to ensure env vars are loaded
+let transporter = null;
+
+function getTransporter() {
+    if (!transporter) {
+        console.log('📧 Creating email transporter...');
+        console.log(`   EMAIL_USER: ${process.env.EMAIL_USER ? process.env.EMAIL_USER.substring(0, 5) + '***' : 'NOT SET'}`);
+        console.log(`   EMAIL_PASS: ${process.env.EMAIL_PASS ? '****' + process.env.EMAIL_PASS.slice(-4) : 'NOT SET'}`);
+
+        transporter = nodemailer.createTransport({
+            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            connectionTimeout: 30000,
+            greetingTimeout: 30000,
+            socketTimeout: 30000,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+            tls: {
+                rejectUnauthorized: false
+            },
+            debug: true,
+            logger: false
+        });
+    }
+    return transporter;
+}
 
 async function sendVerificationEmail(email, code) {
+    console.log(`\n📧 Attempting to send email to ${email}...`);
+    console.log(`   EMAIL_USER env: "${process.env.EMAIL_USER || 'NOT SET'}"`);
+    console.log(`   EMAIL_PASS env: ${process.env.EMAIL_PASS ? 'SET (' + process.env.EMAIL_PASS.length + ' chars)' : 'NOT SET'}`);
+
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || process.env.EMAIL_USER === 'your-email@gmail.com') {
-        console.log(`\n📧 [EMAIL SIMULATION] Verification code for ${email}: ${code}\n`);
-        return;
+        console.log(`⚠️ [EMAIL SIMULATION] Email credentials not configured!`);
+        console.log(`📧 Verification code for ${email}: ${code}\n`);
+        return { sent: false, simulated: true, code };
     }
 
     try {
-        await transporter.sendMail({
+        const transport = getTransporter();
+
+        // Verify connection first
+        console.log('   Verifying SMTP connection...');
+        await transport.verify();
+        console.log('   ✅ SMTP connection verified!');
+
+        const info = await transport.sendMail({
             from: `"SkillSwap AI" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: 'Код подтверждения регистрации',
+            subject: 'Код подтверждения регистрации — SkillSwap AI',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                     <h2 style="color: #333; text-align: center;">Добро пожаловать в SkillSwap AI!</h2>
@@ -295,13 +324,24 @@ async function sendVerificationEmail(email, code) {
             `
         });
         console.log(`✅ Email sent successfully to ${email}`);
+        console.log(`   Message ID: ${info.messageId}`);
+        console.log(`   Response: ${info.response}`);
+        return { sent: true };
     } catch (error) {
-        console.error('❌ Error sending email:', error.message);
+        console.error(`❌ Error sending email to ${email}:`);
+        console.error(`   Error code: ${error.code}`);
+        console.error(`   Error message: ${error.message}`);
+        console.error(`   Full error:`, error);
         if (error.code === 'EAUTH') {
-            console.error('CRITICAL: Authentication failed. Use an "App Password" if using Gmail with 2FA.');
+            console.error('   ⚠️ CRITICAL: Gmail authentication failed!');
+            console.error('   Make sure you are using an App Password (not your regular password).');
+            console.error('   Go to: https://myaccount.google.com/apppasswords');
         }
-        // Fallback for dev mode
+        if (error.code === 'ESOCKET' || error.code === 'ECONNECTION') {
+            console.error('   ⚠️ Network/connection error — Render might be blocking SMTP port 465.');
+        }
         console.log(`\n📧 [EMAIL FALLBACK] Verification code for ${email}: ${code}\n`);
+        throw error; // Re-throw so caller knows it failed
     }
 }
 
@@ -331,12 +371,33 @@ app.post('/api/auth/register', async (req, res) => {
 
         saveDB();
 
-        // Send email in background (don't block response)
-        sendVerificationEmail(email, verificationCode).catch(err => {
-            console.error('Background email send failed:', err.message);
-        });
+        // Actually wait for email to be sent
+        let emailSent = false;
+        let emailSimulated = false;
+        try {
+            const result = await sendVerificationEmail(email, verificationCode);
+            emailSent = result?.sent || false;
+            emailSimulated = result?.simulated || false;
+        } catch (emailErr) {
+            console.error('Email sending failed:', emailErr.message);
+            emailSent = false;
+        }
 
-        res.json({ message: 'Code sent', email });
+        if (emailSent) {
+            res.json({ message: 'Code sent', email });
+        } else if (emailSimulated) {
+            // Dev mode — email not configured, code logged to console
+            res.json({ message: 'Code sent', email, debug: true, code: verificationCode });
+        } else {
+            // Email failed but user was created — return code so they can still verify
+            console.log(`⚠️ Returning verification code in response because email failed`);
+            res.json({
+                message: 'Code sent',
+                email,
+                emailError: true,
+                code: verificationCode
+            });
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
