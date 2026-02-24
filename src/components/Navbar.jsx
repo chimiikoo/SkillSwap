@@ -50,6 +50,7 @@ export default function Navbar() {
                                         </span>
                                     )}
                                 </NavLink>
+                                <NavLink to="/communities" current={location.pathname}>{t('nav.communities') || 'Сообщества'}</NavLink>
                                 <NavLink to="/profile" current={location.pathname}>{t('nav.profile')}</NavLink>
                                 {isAdmin && <NavLink to="/admin" current={location.pathname}>{t('nav.admin')}</NavLink>}
                                 <div className="w-px h-6 bg-white/10 mx-2"></div>
@@ -141,6 +142,7 @@ export default function Navbar() {
                                             )}
                                         </div>
                                     </MobileNavLink>
+                                    <MobileNavLink to="/communities" onClick={() => setMobileOpen(false)}>{t('nav.communities') || 'Сообщества'}</MobileNavLink>
                                     <MobileNavLink to="/profile" onClick={() => setMobileOpen(false)}>{t('nav.profile')}</MobileNavLink>
                                     {isAdmin && <MobileNavLink to="/admin" onClick={() => setMobileOpen(false)}>{t('nav.admin')}</MobileNavLink>}
                                     <button

@@ -134,6 +134,42 @@ async function initDB() {
     )
   `);
 
+    // Communities tables
+    db.run(`
+    CREATE TABLE IF NOT EXISTS communities (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      category TEXT DEFAULT '',
+      avatarUrl TEXT DEFAULT '',
+      color TEXT DEFAULT '#A3FF12',
+      createdBy TEXT NOT NULL,
+      memberCount INTEGER DEFAULT 1,
+      createdAt TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
+    db.run(`
+    CREATE TABLE IF NOT EXISTS community_members (
+      id TEXT PRIMARY KEY,
+      communityId TEXT NOT NULL,
+      userId TEXT NOT NULL,
+      role TEXT DEFAULT 'member',
+      joinedAt TEXT DEFAULT (datetime('now')),
+      UNIQUE(communityId, userId)
+    )
+  `);
+
+    db.run(`
+    CREATE TABLE IF NOT EXISTS community_messages (
+      id TEXT PRIMARY KEY,
+      communityId TEXT NOT NULL,
+      senderId TEXT NOT NULL,
+      text TEXT NOT NULL,
+      createdAt TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
     // Ensure columns exist for older DBs
     try {
         db.run('ALTER TABLE messages ADD COLUMN type TEXT DEFAULT "text"');
@@ -1108,6 +1144,302 @@ app.post('/api/barter/reject', auth, (req, res) => {
         res.json({ success: true, message: 'Предложение отклонено' });
     } catch (err) {
         console.error('Barter reject error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ===========================
+// COMMUNITIES API
+// ===========================
+
+// Get all communities
+app.get('/api/communities', auth, (req, res) => {
+    try {
+        const rows = db.exec(`
+            SELECT c.*, u.name as creatorName, u.avatarUrl as creatorAvatar,
+            (SELECT COUNT(*) FROM community_members WHERE communityId = c.id) as memberCount
+            FROM communities c
+            LEFT JOIN users u ON c.createdBy = u.id
+            ORDER BY memberCount DESC, c.createdAt DESC
+        `);
+        const communities = rows.length > 0 ? rows[0].values.map(r => ({
+            id: r[0], name: r[1], description: r[2], category: r[3],
+            avatarUrl: r[4], color: r[5], createdBy: r[6],
+            memberCount: r[7], createdAt: r[8],
+            creatorName: r[9], creatorAvatar: r[10],
+            actualMemberCount: r[11]
+        })) : [];
+
+        // Check membership for current user
+        for (const c of communities) {
+            const member = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [c.id, req.userId]);
+            c.isMember = !!member;
+            c.role = member?.role || null;
+            c.memberCount = c.actualMemberCount;
+        }
+
+        res.json({ communities });
+    } catch (err) {
+        console.error('Communities list error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get my communities
+app.get('/api/communities/my', auth, (req, res) => {
+    try {
+        const rows = db.exec(`
+            SELECT c.*, cm.role,
+            (SELECT COUNT(*) FROM community_members WHERE communityId = c.id) as memberCount
+            FROM communities c
+            JOIN community_members cm ON c.id = cm.communityId AND cm.userId = '${req.userId}'
+            ORDER BY cm.joinedAt DESC
+        `);
+        const communities = rows.length > 0 ? rows[0].values.map(r => ({
+            id: r[0], name: r[1], description: r[2], category: r[3],
+            avatarUrl: r[4], color: r[5], createdBy: r[6],
+            memberCount: r[11], createdAt: r[8],
+            role: r[9], isMember: true
+        })) : [];
+        res.json({ communities });
+    } catch (err) {
+        console.error('My communities error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// AI recommended communities
+app.get('/api/communities/recommended', auth, (req, res) => {
+    try {
+        const user = queryOne('SELECT teachSkills, learnSkills FROM users WHERE id = ?', [req.userId]);
+        let userSkills = [];
+        try {
+            userSkills = [...JSON.parse(user?.teachSkills || '[]'), ...JSON.parse(user?.learnSkills || '[]')];
+        } catch { }
+
+        const rows = db.exec(`
+            SELECT c.*,
+            (SELECT COUNT(*) FROM community_members WHERE communityId = c.id) as memberCount
+            FROM communities c
+            WHERE c.id NOT IN (SELECT communityId FROM community_members WHERE userId = '${req.userId}')
+            ORDER BY memberCount DESC
+        `);
+        let communities = rows.length > 0 ? rows[0].values.map(r => ({
+            id: r[0], name: r[1], description: r[2], category: r[3],
+            avatarUrl: r[4], color: r[5], createdBy: r[6],
+            memberCount: r[11], createdAt: r[8],
+            isMember: false
+        })) : [];
+
+        // Score by skill match
+        communities = communities.map(c => {
+            const nameAndDesc = (c.name + ' ' + c.description + ' ' + c.category).toLowerCase();
+            let score = 0;
+            for (const skill of userSkills) {
+                if (nameAndDesc.includes(skill.toLowerCase())) score += 10;
+            }
+            return { ...c, matchScore: score };
+        }).sort((a, b) => b.matchScore - a.matchScore || b.memberCount - a.memberCount);
+
+        res.json({ communities: communities.slice(0, 10) });
+    } catch (err) {
+        console.error('Recommended communities error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Create community
+app.post('/api/communities/create', auth, (req, res) => {
+    try {
+        const { name, description, category, color } = req.body;
+        if (!name || !name.trim()) return res.status(400).json({ error: 'Name required' });
+
+        const id = uuidv4();
+        db.run(`INSERT INTO communities (id, name, description, category, color, createdBy) VALUES (?, ?, ?, ?, ?, ?)`,
+            [id, name.trim(), description || '', category || '', color || '#A3FF12', req.userId]);
+
+        // Add creator as CEO
+        db.run(`INSERT INTO community_members (id, communityId, userId, role) VALUES (?, ?, ?, 'ceo')`,
+            [uuidv4(), id, req.userId]);
+
+        saveDB();
+        res.json({ success: true, community: { id, name: name.trim(), description, category, color, createdBy: req.userId } });
+    } catch (err) {
+        console.error('Create community error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get community details
+app.get('/api/communities/:id', auth, (req, res) => {
+    try {
+        const c = queryOne('SELECT * FROM communities WHERE id = ?', [req.params.id]);
+        if (!c) return res.status(404).json({ error: 'Community not found' });
+
+        // Get members
+        const membersRows = db.exec(`
+            SELECT cm.userId, cm.role, cm.joinedAt, u.name, u.avatarUrl, u.university
+            FROM community_members cm
+            JOIN users u ON cm.userId = u.id
+            WHERE cm.communityId = '${req.params.id}'
+            ORDER BY CASE cm.role WHEN 'ceo' THEN 0 ELSE 1 END, cm.joinedAt ASC
+        `);
+        const members = membersRows.length > 0 ? membersRows[0].values.map(r => ({
+            userId: r[0], role: r[1], joinedAt: r[2], name: r[3], avatarUrl: r[4], university: r[5]
+        })) : [];
+
+        const myMember = members.find(m => m.userId === req.userId);
+
+        // Get creator info
+        const creator = queryOne('SELECT name, avatarUrl FROM users WHERE id = ?', [c.createdBy]);
+
+        res.json({
+            community: { ...c, memberCount: members.length, creatorName: creator?.name, creatorAvatar: creator?.avatarUrl },
+            members,
+            isMember: !!myMember,
+            role: myMember?.role || null
+        });
+    } catch (err) {
+        console.error('Community detail error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Join community
+app.post('/api/communities/:id/join', auth, (req, res) => {
+    try {
+        const existing = queryOne('SELECT * FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        if (existing) return res.status(400).json({ error: 'Already a member' });
+
+        db.run(`INSERT INTO community_members (id, communityId, userId, role) VALUES (?, ?, ?, 'member')`,
+            [uuidv4(), req.params.id, req.userId]);
+        saveDB();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Join community error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Leave community
+app.post('/api/communities/:id/leave', auth, (req, res) => {
+    try {
+        const member = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        if (!member) return res.status(400).json({ error: 'Not a member' });
+        if (member.role === 'ceo') return res.status(400).json({ error: 'CEO cannot leave. Delete the community instead.' });
+
+        db.run('DELETE FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        saveDB();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Leave community error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// CEO: Kick member
+app.post('/api/communities/:id/kick/:userId', auth, (req, res) => {
+    try {
+        const ceo = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        if (!ceo || ceo.role !== 'ceo') return res.status(403).json({ error: 'Only CEO can kick members' });
+        if (req.params.userId === req.userId) return res.status(400).json({ error: 'Cannot kick yourself' });
+
+        db.run('DELETE FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.params.userId]);
+        saveDB();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Kick member error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Community chat messages
+app.get('/api/communities/:id/messages', auth, (req, res) => {
+    try {
+        // Verify membership
+        const member = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        if (!member) return res.status(403).json({ error: 'Not a member' });
+
+        const rows = db.exec(`
+            SELECT cm.id, cm.senderId, cm.text, cm.createdAt, u.name, u.avatarUrl,
+            (SELECT role FROM community_members WHERE communityId = '${req.params.id}' AND userId = cm.senderId) as senderRole
+            FROM community_messages cm
+            JOIN users u ON cm.senderId = u.id
+            WHERE cm.communityId = '${req.params.id}'
+            ORDER BY cm.createdAt ASC
+            LIMIT 200
+        `);
+        const messages = rows.length > 0 ? rows[0].values.map(r => ({
+            id: r[0], senderId: r[1], text: r[2], createdAt: r[3],
+            senderName: r[4], senderAvatar: r[5], senderRole: r[6]
+        })) : [];
+
+        res.json({ messages });
+    } catch (err) {
+        console.error('Community messages error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Send community message
+app.post('/api/communities/:id/messages', auth, (req, res) => {
+    try {
+        const member = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        if (!member) return res.status(403).json({ error: 'Not a member' });
+
+        const { text } = req.body;
+        if (!text || !text.trim()) return res.status(400).json({ error: 'Text required' });
+
+        const id = uuidv4();
+        db.run('INSERT INTO community_messages (id, communityId, senderId, text) VALUES (?, ?, ?, ?)',
+            [id, req.params.id, req.userId, text.trim()]);
+        saveDB();
+
+        const user = queryOne('SELECT name, avatarUrl FROM users WHERE id = ?', [req.userId]);
+        res.json({
+            message: {
+                id, senderId: req.userId, text: text.trim(),
+                createdAt: new Date().toISOString(),
+                senderName: user?.name, senderAvatar: user?.avatarUrl,
+                senderRole: member.role
+            }
+        });
+    } catch (err) {
+        console.error('Send community message error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update community (CEO only)
+app.put('/api/communities/:id', auth, (req, res) => {
+    try {
+        const ceo = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        if (!ceo || ceo.role !== 'ceo') return res.status(403).json({ error: 'Only CEO can update' });
+
+        const { name, description, category, color } = req.body;
+        db.run('UPDATE communities SET name = ?, description = ?, category = ?, color = ? WHERE id = ?',
+            [name || '', description || '', category || '', color || '#A3FF12', req.params.id]);
+        saveDB();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Update community error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete community (CEO only)
+app.delete('/api/communities/:id', auth, (req, res) => {
+    try {
+        const ceo = queryOne('SELECT role FROM community_members WHERE communityId = ? AND userId = ?', [req.params.id, req.userId]);
+        if (!ceo || ceo.role !== 'ceo') return res.status(403).json({ error: 'Only CEO can delete' });
+
+        db.run('DELETE FROM community_messages WHERE communityId = ?', [req.params.id]);
+        db.run('DELETE FROM community_members WHERE communityId = ?', [req.params.id]);
+        db.run('DELETE FROM communities WHERE id = ?', [req.params.id]);
+        saveDB();
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Delete community error:', err);
         res.status(500).json({ error: err.message });
     }
 });

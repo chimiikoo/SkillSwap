@@ -12,6 +12,8 @@ import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
 import AdminPanel from './pages/AdminPanel';
 import Chat from './pages/Chat';
+import Communities from './pages/Communities';
+import CommunityDetail from './pages/CommunityDetail';
 
 function ProtectedRoute({ children, adminOnly = false }) {
     const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -45,6 +47,8 @@ function AppRoutes() {
                 <Route path="/user/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPanel /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                <Route path="/communities" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
+                <Route path="/community/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </>
