@@ -181,6 +181,17 @@ async function initDB() {
     )
   `);
 
+    db.run(`
+    CREATE TABLE IF NOT EXISTS follows (
+      followerId TEXT NOT NULL,
+      followedId TEXT NOT NULL,
+      createdAt TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (followerId, followedId),
+      FOREIGN KEY (followerId) REFERENCES users(id),
+      FOREIGN KEY (followedId) REFERENCES users(id)
+    )
+  `);
+
     // Ensure columns exist for older DBs
     try {
         db.run('ALTER TABLE messages ADD COLUMN type TEXT DEFAULT "text"');
@@ -222,32 +233,78 @@ async function initDB() {
         console.log(`Admin user created: ${adminEmail} / SkillSwap007`);
     }
 
-    // Seed demo users
+    // Seed demo users (High Quality Tutors)
     const demoUsers = [
-        { name: 'Айдана Касымова', email: 'aidana@mail.kg', university: 'КГТУ им. И. Раззакова', bio: 'Frontend разработчик с 3-летним опытом. Специализируюсь на Python и ML.', teach: ['Python', 'Machine Learning', 'Data Science', 'SQL'], learn: ['React', 'JavaScript', 'TypeScript'], rating: 4.8 },
-        { name: 'Бекзат Алиев', email: 'bekzat@mail.kg', university: 'Американский Университет Центральной Азии (АУЦА)', bio: 'Дизайнер с опытом в Figma и Adobe. Создаю UI/UX для стартапов.', teach: ['UI/UX Design', 'Figma', 'Photoshop'], learn: ['Node.js', 'React', 'JavaScript'], rating: 4.5 },
-        { name: 'Нурай Темирова', email: 'nuray@mail.kg', university: 'Кыргызско-Российский Славянский университет (КРСУ)', bio: 'Data Scientist, работаю с Python и ML. Хочу освоить веб.', teach: ['Data Science', 'Python', 'Machine Learning'], learn: ['JavaScript', 'React'], rating: 4.9 },
-        { name: 'Тимур Батырканов', email: 'timur@mail.kg', university: 'Международный университет «Ала-Тоо»', bio: 'Fullstack разработчик Node.js / React.', teach: ['React', 'Node.js', 'TypeScript', 'DevOps'], learn: ['Machine Learning', 'Python'], rating: 4.6 },
-        { name: 'Асель Жумабекова', email: 'asel@mail.kg', university: 'Бишкекский гуманитарный университет им. К. Карасаева (БГУ)', bio: 'Маркетолог и копирайтер. SEO и SMM.', teach: ['Маркетинг', 'SEO', 'Copywriting', 'English'], learn: ['Python', 'Data Science'], rating: 4.3 },
-        { name: 'Эмир Турсунов', email: 'emir@mail.kg', university: 'Кыргызско-Турецкий университет «Манас»', bio: 'Java разработчик, интересуюсь фронтендом.', teach: ['Java', 'C++', 'SQL', 'Git'], learn: ['React', 'UI/UX Design', 'Figma'], rating: 4.4 },
-        { name: 'Марат Сатыбалдиев', email: 'marat@mail.kg', university: 'Кыргызский Национальный университет им. Ж. Баласагына (КНУ)', bio: 'Начинающий разработчик.', teach: ['HTML', 'CSS'], learn: ['JavaScript', 'React'], rating: 3.5 },
-        { name: 'Камила Оморова', email: 'kamila@mail.kg', university: 'Кыргызская Государственная медицинская академия им. И.К. Ахунбаева (КГМА)', bio: 'Медик, учу английский для стажировки.', teach: ['Биология', 'Химия'], learn: ['English', 'German'], rating: 4.7 },
+        {
+            name: 'Айдана Касымова',
+            email: 'aidana@mail.kg',
+            university: 'КГТУ им. И. Раззакова',
+            bio: 'Senior Frontend Developer в международной компании. Преподаю Python и Data Science более 5 лет. Помогу освоить базу и продвинутые концепции Machine Learning.',
+            teach: ['Python', 'Machine Learning', 'Data Science', 'SQL'],
+            learn: ['React', 'JavaScript', 'TypeScript'],
+            userType: 'tutor',
+            experience: 5,
+            city: 'Бишкек',
+            teachingFormat: 'both',
+            rating: 4.8,
+            sessionsCount: 154
+        },
+        {
+            name: 'Алексей Смирнов',
+            email: 'alex@mail.kg',
+            university: 'АУЦА',
+            bio: 'Профессиональный UI/UX дизайнер. Работаю с крупными финтех-проектами. Мои уроки — это 90% практики в Figma и реальные кейсы.',
+            teach: ['UI/UX Design', 'Figma', 'Photoshop', 'Illustrator'],
+            learn: ['Node.js', 'React'],
+            userType: 'tutor',
+            experience: 7,
+            city: 'Бишкек',
+            teachingFormat: 'online',
+            rating: 4.9,
+            sessionsCount: 210
+        },
+        {
+            name: 'Елена Воронцова',
+            email: 'elena@mail.kg',
+            university: 'БГУ им. К. Карасаева',
+            bio: 'Носитель английского языка. Подготовлю к IELTS и TOEFL. Индивидуальный подход и современные методики обучения.',
+            teach: ['English', 'Spanish', 'German'],
+            learn: ['Python', 'JavaScript'],
+            userType: 'tutor',
+            experience: 10,
+            city: 'Ош',
+            teachingFormat: 'both',
+            rating: 5.0,
+            sessionsCount: 345
+        },
+        {
+            name: 'Тимур Батырканов',
+            email: 'timur@mail.kg',
+            university: 'Ала-Тоо',
+            bio: 'Fullstack разработчик (MERN). Люблю чистый код и архитектуру приложений. Научу строить масштабируемые бэкенды.',
+            teach: ['React', 'Node.js', 'TypeScript', 'Docker', 'Git'],
+            learn: ['Machine Learning'],
+            userType: 'tutor',
+            experience: 4,
+            city: 'Бишкек',
+            teachingFormat: 'offline',
+            rating: 4.7,
+            sessionsCount: 89
+        }
     ];
 
     for (const u of demoUsers) {
         const check = db.exec(`SELECT id FROM users WHERE email = '${u.email}'`);
         if (check.length === 0 || check[0].values.length === 0) {
+            const id = uuidv4();
+            const hashedPassword = bcrypt.hashSync('demo123', 10);
             db.run(`
-        INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, rating, reviewsCount, skillCoins, sessionsCount, isVerified)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-                uuidv4(), u.email, bcrypt.hashSync('demo123', 10), u.name,
-                u.university, u.bio,
-                JSON.stringify(u.teach), JSON.stringify(u.learn),
-                u.rating, Math.floor(Math.random() * 20) + 5,
-                Math.floor(Math.random() * 20) + 3,
-                Math.floor(Math.random() * 30) + 5,
-                1 // Verified
+                INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat, rating, sessionsCount, isVerified)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            `, [
+                id, u.email, hashedPassword, u.name, u.university, u.bio,
+                JSON.stringify(u.teach || []), JSON.stringify(u.learn || []),
+                u.userType, u.experience, u.city, u.teachingFormat, u.rating, u.sessionsCount
             ]);
         }
     }
@@ -605,12 +662,19 @@ app.get('/api/users/:id', auth, (req, res) => {
     WHERE r.targetId = ? ORDER BY r.createdAt DESC LIMIT 10
   `, [req.params.id]);
 
+    const followersCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followedId = ?', [req.params.id]).count;
+    const followingCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followerId = ?', [req.params.id]).count;
+    const isFollowing = !!queryOne('SELECT 1 FROM follows WHERE followerId = ? AND followedId = ?', [req.userId, req.params.id]);
+
     res.json({
         user: {
             ...user,
             password: undefined,
             matchScore: matchResult.score,
             matchReason: matchResult.reason,
+            followersCount,
+            followingCount,
+            isFollowing,
             reviews: reviews.map(r => ({
                 author: r.authorName,
                 rating: r.rating,
@@ -619,6 +683,28 @@ app.get('/api/users/:id', auth, (req, res) => {
             }))
         }
     });
+});
+
+// Follow/Unfollow endpoints
+app.post('/api/users/:id/follow', auth, (req, res) => {
+    if (req.userId === req.params.id) return res.status(400).json({ error: 'Нельзя подписаться на самого себя' });
+    try {
+        db.run('INSERT OR IGNORE INTO follows (followerId, followedId) VALUES (?, ?)', [req.userId, req.params.id]);
+        saveDB();
+        res.json({ success: true, isFollowing: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/users/:id/unfollow', auth, (req, res) => {
+    try {
+        db.run('DELETE FROM follows WHERE followerId = ? AND followedId = ?', [req.userId, req.params.id]);
+        saveDB();
+        res.json({ success: true, isFollowing: false });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // =================== AI MATCHING ===================

@@ -229,8 +229,10 @@ export function TurkishIcon({ size = 20, className = '' }) {
 
 export function CodeIcon({ size = 20, className = '' }) {
     return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="m18 16 4-4-4-4" stroke="#A3FF12" />
+            <path d="m6 8-4 4 4 4" stroke="#A3FF12" />
+            <path d="m14.5 4-5 16" stroke="white" strokeOpacity="0.3" />
         </svg>
     );
 }
@@ -246,9 +248,9 @@ export function PaletteIcon({ size = 20, className = '' }) {
 
 export function BrainIcon({ size = 20, className = '' }) {
     return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24A2.5 2.5 0 0 1 9.5 2" />
-            <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2" />
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .52 8.245 4 4 0 0 0 7.931-1.14c.002-.014.002-.13.002-.2V5Z" stroke="#A3FF12" />
+            <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.52 8.245 4 4 0 0 1-7.931-1.14c-.002-.014-.002-.13-.002-.2V5Z" stroke="white" strokeOpacity="0.2" />
         </svg>
     );
 }
@@ -303,8 +305,8 @@ export function ShieldCheckIcon({ size = 20, className = '' }) {
 
 export function StarIcon({ size = 20, className = '' }) {
     return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a.53.53 0 0 0 .4.29l5.163.75a.53.53 0 0 1 .294.904l-3.736 3.642a.53.53 0 0 0-.152.469l.882 5.142a.53.53 0 0 1-.769.559l-4.618-2.428a.53.53 0 0 0-.494 0l-4.618 2.428a.53.53 0 0 1-.77-.559l.882-5.142a.53.53 0 0 0-.153-.47l-3.735-3.641a.53.53 0 0 1 .293-.904l5.164-.75a.53.53 0 0 0 .399-.29l2.31-4.679Z" stroke="#A3FF12" />
         </svg>
     );
 }
@@ -337,10 +339,10 @@ export function CoinIcon({ size = 20, className = '' }) {
 
 export function SparklesIcon({ size = 20, className = '' }) {
     return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
-            <path d="M19 13l.75 2.25L22 16l-2.25.75L19 19l-.75-2.25L16 16l2.25-.75L19 13z" />
-            <path d="M5 17l.5 1.5L7 19l-1.5.5L5 21l-.5-1.5L3 19l1.5-.5L5 17z" />
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="m12 3 1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3Z" stroke="#A3FF12" />
+            <circle cx="18" cy="5" r="1.5" fill="#A3FF12" fillOpacity="0.3" />
+            <circle cx="5" cy="18" r="1" fill="white" fillOpacity="0.2" />
         </svg>
     );
 }
@@ -438,11 +440,42 @@ export function PauseIcon({ size = 20, className = '' }) {
     );
 }
 
-export function CameraIcon({ size = 20, className = '' }) {
+export function HeartIcon({ size = 20, className = '', filled = false }) {
     return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-            <circle cx="12" cy="13" r="4"></circle>
+        <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#ff2d55" : "none"} stroke={filled ? "#ff2d55" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.505 4.04 3 5.5L12 21l7-7Z" />
+        </svg>
+    );
+}
+
+export function MapPinIcon({ size = 20, className = '' }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+            <circle cx="12" cy="10" r="3" />
+        </svg>
+    );
+}
+
+export function TrophyIcon({ size = 20, className = '' }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+            <path d="M4 22h16" />
+            <path d="M10 22v-3.83" />
+            <path d="M14 22v-3.83" />
+            <path d="M12 17V4" />
+            <path d="M17 4l-10-0v7c0 2.76 2.24 5 5 5s5-2.24 5-5V4Z" />
+        </svg>
+    );
+}
+
+export function DiscoveryIcon({ size = 20, className = '' }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
         </svg>
     );
 }

@@ -3,8 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
-import { SkillIcon, StarIcon, SparklesIcon, ShieldCheckIcon } from '../components/Icons';
-import { VerifiedBadge, TutorInfoBadge } from '../components/VerifiedBadge';
+import { SkillIcon, StarIcon, SparklesIcon, ShieldCheckIcon, HeartIcon, MapPinIcon, TrophyIcon, GraduationIcon as UniIcon } from '../components/Icons';
+import { VerifiedBadge } from '../components/VerifiedBadge';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 const fadeUp = {
@@ -40,6 +40,7 @@ export default function UserProfile() {
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewText, setReviewText] = useState('');
     const [message, setMessage] = useState('');
+    const [isFollowLoading, setIsFollowLoading] = useState(false);
 
     useEffect(() => {
         loadProfile();
@@ -86,6 +87,24 @@ export default function UserProfile() {
             loadProfile();
         } catch (err) {
             setMessage(err.message || t('userProfile.error'));
+        }
+    };
+
+    const handleFollow = async () => {
+        if (isFollowLoading) return;
+        setIsFollowLoading(true);
+        try {
+            const endpoint = profile.isFollowing ? `/users/${id}/unfollow` : `/users/${id}/follow`;
+            const data = await apiFetch(endpoint, { method: 'POST' });
+            setProfile(prev => ({
+                ...prev,
+                isFollowing: data.isFollowing,
+                followersCount: prev.followersCount + (data.isFollowing ? 1 : -1)
+            }));
+        } catch (err) {
+            setMessage(err.message);
+        } finally {
+            setIsFollowLoading(false);
         }
     };
 
@@ -148,75 +167,135 @@ export default function UserProfile() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="glass-card p-6 md:p-8 mb-6"
+                    className="glass-card p-6 md:p-8 mb-6 relative overflow-hidden"
                 >
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
+                    <div className="absolute top-0 right-0 p-6 flex flex-col items-end gap-2">
+                        <button
+                            onClick={handleFollow}
+                            disabled={isFollowLoading}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all ${profile.isFollowing
+                                ? 'bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
+                                : 'bg-white/5 text-white/50 border border-white/10 hover:border-neon/30 hover:text-neon'
+                                }`}
+                        >
+                            <HeartIcon size={14} filled={profile.isFollowing} className={isFollowLoading ? 'animate-pulse' : ''} />
+                            {profile.isFollowing ? t('userProfile.following') : t('userProfile.follow')}
+                        </button>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
                         <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            transition={{ type: 'spring', delay: 0.2 }}
-                            className="w-20 h-20 rounded-2xl overflow-hidden bg-neon/10 border border-neon/20 flex items-center justify-center text-neon text-3xl font-bold"
+                            transition={{ type: 'spring', damping: 15, delay: 0.2 }}
+                            className="relative"
                         >
-                            {profile.avatarUrl ? (
-                                <img src={resolveFileUrl(profile.avatarUrl)} alt={profile.name} className="w-full h-full object-cover" />
-                            ) : (
-                                profile.name?.charAt(0)
+                            <div className="w-24 h-24 rounded-3xl overflow-hidden bg-neon/10 border-2 border-neon/20 p-1 flex items-center justify-center text-neon text-4xl font-bold shadow-[0_0_30px_rgba(163,255,18,0.1)]">
+                                {profile.avatarUrl ? (
+                                    <img src={resolveFileUrl(profile.avatarUrl)} alt={profile.name} className="w-full h-full object-cover rounded-2xl" />
+                                ) : (
+                                    profile.name?.charAt(0)
+                                )}
+                            </div>
+                            {profile.userType === 'tutor' && (
+                                <div className="absolute -bottom-1 -right-1">
+                                    <VerifiedBadge size={28} className="drop-shadow-[0_0_8px_rgba(163,255,18,0.5)]" />
+                                </div>
                             )}
                         </motion.div>
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-1">
-                                <h1 className="font-display text-2xl font-bold flex items-center gap-2">
+
+                        <div className="flex-1 mt-2 md:mt-0">
+                            <div className="flex flex-wrap items-center gap-3 mb-1.5">
+                                <h1 className="font-display text-3xl font-bold tracking-tight">
                                     {profile.name}
-                                    {profile.userType === 'tutor' && <VerifiedBadge size={20} />}
                                 </h1>
                                 {profile.matchScore && (
-                                    <span className={`px-3 py-1 rounded-lg bg-gradient-to-r ${scoreBg} text-xs font-bold border flex items-center gap-1`}>
-                                        <SparklesIcon size={12} />
-                                        {profile.matchScore}% match
+                                    <span className={`px-3 py-1 rounded-full bg-gradient-to-r ${scoreBg} text-[10px] uppercase font-black tracking-widest border shadow-lg`}>
+                                        {profile.matchScore}% core match
                                     </span>
                                 )}
                             </div>
-                            <p className="text-white/30 text-sm flex items-center gap-1.5 mb-2">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                                {profile.university}
-                            </p>
-                            {profile.userType === 'tutor' && (
-                                <TutorInfoBadge format={profile.teachingFormat} experience={profile.experience} city={profile.city} className="mb-2" />
-                            )}
+
+                            <div className="flex flex-wrap items-center gap-y-2 gap-x-4 mb-4">
+                                <span className="text-white/40 text-sm flex items-center gap-1.5">
+                                    <UniIcon size={14} className="text-neon/60" />
+                                    {profile.university}
+                                </span>
+                                <span className="text-white/20">•</span>
+                                <div className="flex items-center gap-4 text-sm font-medium">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-white">{profile.followersCount || 0}</span>
+                                        <span className="text-white/40 text-xs font-normal">{t('userProfile.followers')}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-white">{profile.followingCount || 0}</span>
+                                        <span className="text-white/40 text-xs font-normal">{t('userProfile.following')}</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             {profile.bio && (
-                                <p className="text-white/40 text-sm leading-relaxed">{profile.bio}</p>
+                                <p className="text-white/50 text-sm leading-relaxed max-w-xl">{profile.bio}</p>
                             )}
                         </div>
                     </div>
 
-                    {/* Stats row */}
-                    <div className="flex items-center gap-6 mt-6 pt-5 border-t border-white/5">
-                        <div className="flex items-center gap-1.5">
-                            {[1, 2, 3, 4, 5].map(s => (
-                                <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill={s <= Math.round(profile.rating || 0) ? '#A3FF12' : 'none'} stroke="#A3FF12" strokeWidth="1.5">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                </svg>
-                            ))}
-                            <span className="text-white/50 text-sm ml-1">{profile.rating?.toFixed(1)}</span>
+                    {/* Stats & Tutoring Info */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/5">
+                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
+                            <div className="flex items-center gap-2 mb-1 text-white/40">
+                                <StarIcon size={14} className="text-yellow-500" />
+                                <span className="text-[10px] uppercase font-bold tracking-wider">{t('userProfile.rating')}</span>
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xl font-bold text-white">{profile.rating?.toFixed(1)}</span>
+                                <span className="text-[10px] text-white/30">/ 5.0</span>
+                            </div>
                         </div>
-                        <span className="text-white/15">|</span>
-                        <span className="text-white/40 text-sm">{profile.sessionsCount || 0} {t('userProfile.sessionsCount')}</span>
-                        <span className="text-white/15">|</span>
-                        <span className="text-white/40 text-sm">{profile.reviewsCount || 0} {t('userProfile.reviewsCount')}</span>
+
+                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
+                            <div className="flex items-center gap-2 mb-1 text-white/40">
+                                <SparklesIcon size={14} className="text-neon" />
+                                <span className="text-[10px] uppercase font-bold tracking-wider">{t('dashboard.sessions')}</span>
+                            </div>
+                            <span className="text-xl font-bold text-white">{profile.sessionsCount || 0}</span>
+                        </div>
+
+                        {profile.userType === 'tutor' && (
+                            <>
+                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
+                                    <div className="flex items-center gap-2 mb-1 text-white/40">
+                                        <TrophyIcon size={14} className="text-blue-400" />
+                                        <span className="text-[10px] uppercase font-bold tracking-wider">{t('register.experienceLabel')}</span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-xl font-bold text-white font-mono">{profile.experience}</span>
+                                        <span className="text-[10px] text-white/30 uppercase">{t('register.years')}</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
+                                    <div className="flex items-center gap-2 mb-1 text-white/40">
+                                        <MapPinIcon size={14} className="text-red-400" />
+                                        <span className="text-[10px] uppercase font-bold tracking-wider">{t('register.cityLabel')}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-white truncate">{profile.city}</span>
+                                </div>
+                            </>
+                        )}
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-wrap gap-3 mt-5">
-                        <button onClick={handleMessage} className="neon-btn px-5 py-2.5 rounded-xl text-sm flex items-center gap-2">
+                    <div className="flex flex-wrap gap-3 mt-8">
+                        <button onClick={handleMessage} className="neon-btn px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(163,255,18,0.15)] group">
                             <ChatIcon />
                             {t('userProfile.sendMessage')}
+                            <span className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">→</span>
                         </button>
-                        <button onClick={() => setShowReview(true)} className="neon-btn-outline px-5 py-2.5 rounded-xl text-sm flex items-center gap-2">
+                        <button onClick={() => setShowReview(true)} className="glass-btn px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 border border-white/10 hover:border-white/20 transition-all">
                             <StarIcon size={16} />
                             {t('userProfile.leaveReview')}
                         </button>
-                        <button onClick={() => setShowReport(true)} className="px-4 py-2.5 rounded-xl text-sm bg-red-500/5 text-red-400/60 border border-red-500/10 hover:bg-red-500/10 transition-colors flex items-center gap-2">
-                            <ShieldCheckIcon size={16} />
+                        <button onClick={() => setShowReport(true)} className="px-5 py-3 rounded-xl text-xs font-bold text-red-400/50 hover:text-red-400 hover:bg-red-500/10 transition-all uppercase tracking-widest ml-auto">
                             {t('userProfile.report')}
                         </button>
                     </div>
@@ -237,15 +316,18 @@ export default function UserProfile() {
 
                 {/* Skills */}
                 <ScrollSection className="grid md:grid-cols-2 gap-4 mb-6">
-                    <motion.div variants={fadeUp} className="glass-card p-5">
-                        <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                    <motion.div variants={fadeUp} className={`glass-card p-5 ${profile.userType === 'tutor' ? 'border-neon/20 bg-neon/[0.02]' : ''}`}>
+                        <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
                             <TeachIcon />
-                            {t('userProfile.canTeach')}
+                            {profile.userType === 'tutor' ? 'Subjects I Teach' : t('userProfile.canTeach')}
                         </h3>
                         <div className="flex flex-wrap gap-2">
                             {(profile.teachSkills || []).map(s => (
-                                <span key={s} className="badge-neon flex items-center gap-1.5 text-xs">
-                                    <SkillIcon skill={s} size={14} />
+                                <span key={s} className={`flex items-center gap-2 py-2 px-3 rounded-xl transition-all ${profile.userType === 'tutor'
+                                    ? 'bg-neon/10 text-neon border border-neon/20 text-sm font-bold hover:bg-neon/20 cursor-default'
+                                    : 'badge-neon text-xs'
+                                    }`}>
+                                    <SkillIcon skill={s} size={profile.userType === 'tutor' ? 18 : 14} />
                                     {s}
                                 </span>
                             ))}
@@ -428,21 +510,26 @@ function LearnIcon() {
 
 function getMockProfile() {
     return {
-        id: '1',
+        id: 'AIDANA-MOCK',
         name: 'Айдана Касымова',
         university: 'КГТУ им. И. Раззакова',
-        bio: 'Frontend разработчик с 3-летним опытом. Специализируюсь на Python и ML. Люблю делиться знаниями!',
+        bio: 'Senior Frontend Developer в международной компании. Преподаю Python и Data Science более 5 лет. Помогу освоить базу и продвинутые концепции Machine Learning.',
         teachSkills: ['Python', 'Machine Learning', 'Data Science', 'SQL'],
         learnSkills: ['React', 'JavaScript', 'TypeScript'],
+        userType: 'tutor',
+        experience: 5,
+        city: 'Бишкек',
+        teachingFormat: 'both',
         rating: 4.8,
-        sessionsCount: 15,
-        reviewsCount: 12,
+        sessionsCount: 154,
+        followersCount: 1250,
+        followingCount: 89,
+        isFollowing: false,
         matchScore: 92,
-        matchReason: 'Может научить вас: Python, Machine Learning. Хочет изучить у вас: React. Идеальный бартер навыков!',
+        matchReason: 'Идеальное комбо! Айдана преподает Python, а вы как раз хотите его изучить.',
         reviews: [
             { author: 'Тимур Б.', rating: 5, text: 'Отличный преподаватель! Очень понятно объясняет Python.' },
             { author: 'Бекзат А.', rating: 5, text: 'Помогла разобраться с Machine Learning за одну сессию.' },
-            { author: 'Эмир Т.', rating: 4, text: 'Хорошая сессия по Data Science, рекомендую.' },
         ],
     };
 }
