@@ -2,9 +2,9 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Link } from 'react-router-dom';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
-import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon, HeartIcon } from '../components/Icons';
+import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon, HeartIcon, UserIcon } from '../components/Icons';
 import { VerifiedBadge } from '../components/VerifiedBadge';
 import { UNIVERSITIES } from '../data/universities';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
@@ -381,13 +381,6 @@ export default function Profile() {
     );
 }
 
-function UserIcon({ size = 18 }) {
-    return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-        </svg>
-    );
-}
 
 function CheckIcon() {
     return (
