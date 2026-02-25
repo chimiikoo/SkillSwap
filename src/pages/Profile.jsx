@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
 import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon } from '../components/Icons';
+import { VerifiedBadge } from '../components/VerifiedBadge';
 import { UNIVERSITIES } from '../data/universities';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 
@@ -139,8 +140,9 @@ export default function Profile() {
                         />
                     </div>
                     <div className="text-center md:text-left">
-                        <h1 className="font-display text-3xl font-bold">
+                        <h1 className="font-display text-3xl font-bold flex items-center gap-2">
                             {t('profile.title')} <span className="neon-text">{t('profile.titleHL')}</span>
+                            {user?.userType === 'tutor' && <VerifiedBadge size={22} />}
                         </h1>
                         <p className="text-white/40 mt-1">{t('profile.subtitle')}</p>
                     </div>

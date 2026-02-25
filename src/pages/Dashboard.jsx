@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { SkillIcon } from '../components/Icons';
+import { VerifiedBadge } from '../components/VerifiedBadge';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 import {
     CoinIcon, StarIcon, BrainIcon, SearchIcon, RocketIcon, SparklesIcon,
@@ -46,6 +47,7 @@ export default function Dashboard() {
     const [matches, setMatches] = useState([]);
     const [sessions, setSessions] = useState([]);
     const [recCommunities, setRecCommunities] = useState([]);
+    const [potentialStudents, setPotentialStudents] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -74,6 +76,13 @@ export default function Dashboard() {
             const commData = await apiFetch('/communities/recommended');
             setRecCommunities(commData?.communities || []);
         } catch { }
+        // Load potential students for tutors
+        if (user?.userType === 'tutor') {
+            try {
+                const studData = await apiFetch('/matching/potential-students');
+                setPotentialStudents(studData?.students || []);
+            } catch { }
+        }
     };
 
     if (loading) {
@@ -159,6 +168,55 @@ export default function Dashboard() {
                         </div>
                     </motion.div>
                 </ScrollSection>
+
+                {/* Tutor: Potential Students */}
+                {user?.userType === 'tutor' && potentialStudents.length > 0 && (
+                    <ScrollSection className="mb-10">
+                        <motion.div variants={fadeUp} className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                🎯 {t('dashboard.potentialStudents') || 'Потенциальные студенты'}
+                            </h2>
+                            <Link to="/search" className="text-neon text-sm hover:underline flex items-center gap-1">
+                                {t('dashboard.allResults')}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                            </Link>
+                        </motion.div>
+
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {potentialStudents.slice(0, 6).map((s, i) => (
+                                <motion.div key={s.id} variants={fadeUp} custom={i}>
+                                    <Link to={`/user/${s.id}`} className="glass-card-hover p-5 block group">
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-neon/10 border border-neon/20 flex items-center justify-center text-neon font-bold group-hover:shadow-neon transition-all duration-500">
+                                                    {s.avatarUrl ? (
+                                                        <img src={resolveFileUrl(s.avatarUrl)} alt={s.name} className="w-full h-full object-cover" />
+                                                    ) : s.name?.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-medium text-sm group-hover:text-neon transition-colors">{s.name}</h4>
+                                                    <p className="text-white/30 text-xs">{s.university}</p>
+                                                </div>
+                                            </div>
+                                            <div className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-500/20 to-cyan-500/5 border border-cyan-500/20 text-cyan-400 text-xs font-bold">
+                                                {s.matchScore}%
+                                            </div>
+                                        </div>
+                                        <p className="text-white/40 text-xs mb-1">{t('dashboard.wantsToLearn') || 'Хочет изучить'}:</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {(s.wantsToLearn || []).map(sk => (
+                                                <span key={sk} className="px-2 py-0.5 rounded text-[11px] bg-cyan-500/10 text-cyan-400/70 border border-cyan-500/15 flex items-center gap-1">
+                                                    <SkillIcon skill={sk} size={10} />
+                                                    {sk}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </Link>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </ScrollSection>
+                )}
 
                 {/* AI Recommendations */}
                 <ScrollSection className="mb-10">
@@ -295,7 +353,10 @@ function MatchCard({ match }) {
                         )}
                     </div>
                     <div>
-                        <h4 className="font-medium text-sm group-hover:text-neon transition-colors">{match.name}</h4>
+                        <h4 className="font-medium text-sm group-hover:text-neon transition-colors flex items-center gap-1.5">
+                            {match.name}
+                            {match.userType === 'tutor' && <VerifiedBadge size={14} />}
+                        </h4>
                         <p className="text-white/30 text-xs">{match.university}</p>
                     </div>
                 </div>

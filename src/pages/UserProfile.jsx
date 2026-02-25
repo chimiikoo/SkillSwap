@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { SkillIcon, StarIcon, SparklesIcon, ShieldCheckIcon } from '../components/Icons';
+import { VerifiedBadge, TutorInfoBadge } from '../components/VerifiedBadge';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 const fadeUp = {
@@ -164,7 +165,10 @@ export default function UserProfile() {
                         </motion.div>
                         <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
-                                <h1 className="font-display text-2xl font-bold">{profile.name}</h1>
+                                <h1 className="font-display text-2xl font-bold flex items-center gap-2">
+                                    {profile.name}
+                                    {profile.userType === 'tutor' && <VerifiedBadge size={20} />}
+                                </h1>
                                 {profile.matchScore && (
                                     <span className={`px-3 py-1 rounded-lg bg-gradient-to-r ${scoreBg} text-xs font-bold border flex items-center gap-1`}>
                                         <SparklesIcon size={12} />
@@ -176,6 +180,9 @@ export default function UserProfile() {
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                                 {profile.university}
                             </p>
+                            {profile.userType === 'tutor' && (
+                                <TutorInfoBadge format={profile.teachingFormat} experience={profile.experience} city={profile.city} className="mb-2" />
+                            )}
                             {profile.bio && (
                                 <p className="text-white/40 text-sm leading-relaxed">{profile.bio}</p>
                             )}

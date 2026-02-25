@@ -6,6 +6,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { SKILL_CATEGORIES, ALL_SKILLS } from '../data/skills';
 import { UNIVERSITIES } from '../data/universities';
 import { SkillIcon, SearchIcon, SparklesIcon, StarIcon } from '../components/Icons';
+import { VerifiedBadge } from '../components/VerifiedBadge';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 const fadeUp = {
@@ -213,7 +214,7 @@ function UserCard({ user }) {
                             )}
                         </div>
                         <div>
-                            <h3 className="font-medium group-hover:text-neon transition-colors">{user.name}</h3>
+                            <h3 className="font-medium group-hover:text-neon transition-colors flex items-center gap-1.5">{user.name}{user.userType === 'tutor' && <VerifiedBadge size={15} />}</h3>
                             <p className="text-white/30 text-xs flex items-center gap-1">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                                 {user.university}

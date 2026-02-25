@@ -78,6 +78,13 @@ async function initDB() {
     try {
         db.run('ALTER TABLE users ADD COLUMN avatarUrl TEXT DEFAULT ""');
     } catch (e) { }
+    // Tutor columns
+    try {
+        db.run('ALTER TABLE users ADD COLUMN userType TEXT DEFAULT "student"');
+        db.run('ALTER TABLE users ADD COLUMN experience INTEGER DEFAULT 0');
+        db.run('ALTER TABLE users ADD COLUMN city TEXT DEFAULT ""');
+        db.run('ALTER TABLE users ADD COLUMN teachingFormat TEXT DEFAULT ""');
+    } catch (e) { }
 
     db.run(`
     CREATE TABLE IF NOT EXISTS sessions (
@@ -280,6 +287,10 @@ function parseUser(row) {
         teachSkills: JSON.parse(row.teachSkills || '[]'),
         learnSkills: JSON.parse(row.learnSkills || '[]'),
         blocked: !!row.blocked,
+        userType: row.userType || 'student',
+        experience: row.experience || 0,
+        city: row.city || '',
+        teachingFormat: row.teachingFormat || '',
     };
 }
 
@@ -403,7 +414,7 @@ async function sendVerificationEmail(email, code) {
 
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password, name, university, bio, teachSkills, learnSkills } = req.body;
+        const { email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat } = req.body;
 
         if (!email || !password || !name) {
             return res.status(400).json({ error: 'Email, пароль и имя обязательны' });
@@ -415,13 +426,15 @@ app.post('/api/auth/register', async (req, res) => {
         const id = uuidv4();
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+        const role = (userType === 'tutor') ? 'tutor' : 'student';
 
         db.run(`
-      INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, isVerified, verificationCode)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, isVerified, verificationCode, userType, experience, city, teachingFormat)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [id, email, hashedPassword, name, university || '', bio || '',
             JSON.stringify(teachSkills || []), JSON.stringify(learnSkills || []),
-            0, verificationCode]); // isVerified = 0
+            0, verificationCode,
+            userType || 'student', experience || 0, city || '', teachingFormat || '']); // isVerified = 0
 
         saveDB();
 
@@ -687,13 +700,57 @@ app.get('/api/matching/recommendations', auth, (req, res) => {
             matchScore: match.score,
             reason: match.reason,
             commonSkills: match.commonSkills,
-            avatarUrl: parsed.avatarUrl
+            avatarUrl: parsed.avatarUrl,
+            userType: parsed.userType || 'student'
         };
     })
         .sort((a, b) => b.matchScore - a.matchScore)
         .slice(0, 10);
 
     res.json({ matches });
+});
+
+// Potential students for tutors
+app.get('/api/matching/potential-students', auth, (req, res) => {
+    try {
+        const currentUser = parseUser(queryOne('SELECT * FROM users WHERE id = ?', [req.userId]));
+        if (!currentUser || currentUser.userType !== 'tutor') {
+            return res.json({ students: [] });
+        }
+
+        const tutorTeach = currentUser.teachSkills || [];
+        if (tutorTeach.length === 0) return res.json({ students: [] });
+
+        const users = queryAll("SELECT * FROM users WHERE id != ? AND blocked = 0 AND role != 'admin'", [req.userId]);
+
+        const students = users.map(u => {
+            const parsed = parseUser(u);
+            const studentLearn = parsed.learnSkills || [];
+            const overlap = tutorTeach.filter(s => studentLearn.includes(s));
+            if (overlap.length === 0) return null;
+
+            const score = Math.min(100, Math.round((overlap.length / tutorTeach.length) * 100));
+            return {
+                id: parsed.id,
+                name: parsed.name,
+                university: parsed.university,
+                rating: parsed.rating,
+                avatarUrl: parsed.avatarUrl,
+                learnSkills: studentLearn,
+                userType: parsed.userType || 'student',
+                matchScore: score,
+                wantsToLearn: overlap,
+            };
+        })
+            .filter(Boolean)
+            .sort((a, b) => b.matchScore - a.matchScore)
+            .slice(0, 10);
+
+        res.json({ students });
+    } catch (err) {
+        console.error('Potential students error:', err);
+        res.json({ students: [] });
+    }
 });
 
 // =================== SESSION ROUTES ===================
