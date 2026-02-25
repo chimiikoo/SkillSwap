@@ -572,7 +572,18 @@ app.post('/api/auth/login', async (req, res) => {
         const parsed = parseUser(user);
         const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
-        res.json({ token, user: { ...parsed, password: undefined } });
+        const followersCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followedId = ?', [user.id]).count;
+        const followingCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followerId = ?', [user.id]).count;
+
+        res.json({
+            token,
+            user: {
+                ...parsed,
+                password: undefined,
+                followersCount,
+                followingCount
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -581,18 +592,31 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/auth/me', auth, (req, res) => {
     const user = parseUser(queryOne('SELECT * FROM users WHERE id = ?', [req.userId]));
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ user: { ...user, password: undefined } });
+
+    const followersCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followedId = ?', [req.userId]).count;
+    const followingCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followerId = ?', [req.userId]).count;
+
+    res.json({
+        user: {
+            ...user,
+            password: undefined,
+            followersCount,
+            followingCount
+        }
+    });
 });
 
 // =================== USER ROUTES ===================
 
 app.get('/api/users/stats', auth, (req, res) => {
     const user = parseUser(queryOne('SELECT * FROM users WHERE id = ?', [req.userId]));
+    const followersCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followedId = ?', [req.userId]).count;
     res.json({
         skillCoins: user?.skillCoins || 0,
         sessionsCount: user?.sessionsCount || 0,
         avgRating: user?.rating || 0,
         reviewsCount: user?.reviewsCount || 0,
+        followersCount
     });
 });
 
@@ -623,8 +647,19 @@ app.put('/api/users/profile', auth, (req, res) => {
         ]);
 
         saveDB();
+
         const user = parseUser(queryOne('SELECT * FROM users WHERE id = ?', [req.userId]));
-        res.json({ user: { ...user, password: undefined } });
+        const followersCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followedId = ?', [req.userId]).count;
+        const followingCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followerId = ?', [req.userId]).count;
+
+        res.json({
+            user: {
+                ...user,
+                password: undefined,
+                followersCount,
+                followingCount
+            }
+        });
     } catch (err) {
         console.error('Update profile error:', err);
         res.status(500).json({ error: err.message });
@@ -638,11 +673,17 @@ app.get('/api/users/search', auth, (req, res) => {
     const scoredUsers = users.map(u => {
         const parsed = parseUser(u);
         const matchResult = calculateMatchScore(currentUser, parsed);
+
+        const fCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followedId = ?', [u.id]).count;
+        const isF = !!queryOne('SELECT 1 FROM follows WHERE followerId = ? AND followedId = ?', [req.userId, u.id]);
+
         return {
             ...parsed,
             password: undefined,
             matchScore: matchResult.score,
             matchReason: matchResult.reason,
+            followersCount: fCount,
+            isFollowing: isF
         };
     }).sort((a, b) => b.matchScore - a.matchScore);
 

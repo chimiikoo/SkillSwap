@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { SKILL_CATEGORIES, ALL_SKILLS } from '../data/skills';
 import { UNIVERSITIES } from '../data/universities';
-import { SkillIcon, SearchIcon, SparklesIcon, StarIcon } from '../components/Icons';
+import { SkillIcon, SearchIcon, SparklesIcon, StarIcon, HeartIcon } from '../components/Icons';
 import { VerifiedBadge } from '../components/VerifiedBadge';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 
@@ -42,6 +42,28 @@ export default function Search() {
             setUsers(getMockUsers());
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleFollowInList = async (e, targetUserId, isCurrentlyFollowing) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            const endpoint = isCurrentlyFollowing ? `/users/${targetUserId}/unfollow` : `/users/${targetUserId}/follow`;
+            const data = await apiFetch(endpoint, { method: 'POST' });
+
+            setUsers(prev => prev.map(u => {
+                if (u.id === targetUserId) {
+                    return {
+                        ...u,
+                        isFollowing: data.isFollowing,
+                        followersCount: u.followersCount + (data.isFollowing ? 1 : -1)
+                    };
+                }
+                return u;
+            }));
+        } catch (err) {
+            console.error('Follow error:', err);
         }
     };
 
@@ -162,10 +184,10 @@ export default function Search() {
                     </div>
                 ) : (
                     <motion.div initial="hidden" animate="visible" variants={stagger} className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <AnimatePresence>
+                        <AnimatePresence mode="popLayout">
                             {filtered.map((user, i) => (
                                 <motion.div key={user.id || i} variants={fadeUp} custom={i} layout>
-                                    <UserCard user={user} />
+                                    <UserCard user={user} onFollow={handleFollowInList} />
                                 </motion.div>
                             ))}
                         </AnimatePresence>
@@ -187,9 +209,10 @@ export default function Search() {
     );
 }
 
-function UserCard({ user }) {
+function UserCard({ user, onFollow }) {
     const ref = useRef(null);
     const inView = useInView(ref, { once: true, margin: '-30px' });
+    const { t } = useLanguage();
 
     const scoreBg = user.matchScore >= 80 ? 'from-green-500/20 to-green-500/5 border-green-500/20 text-green-400'
         : user.matchScore >= 60 ? 'from-neon/20 to-neon/5 border-neon/20 text-neon'
@@ -201,10 +224,22 @@ function UserCard({ user }) {
             ref={ref}
             animate={inView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.4 }}
+            className="h-full"
         >
-            <Link to={`/user/${user.id}`} className="glass-card-hover p-5 block group h-full">
+            <Link to={`/user/${user.id}`} className="glass-card-hover p-5 block group h-full relative">
+                {/* Follow Button - Absolutely positioned to keep clickable */}
+                <button
+                    onClick={(e) => onFollow(e, user.id, user.isFollowing)}
+                    className={`absolute top-5 right-5 z-20 p-2 rounded-xl border transition-all ${user.isFollowing
+                            ? 'bg-red-500/10 border-red-500/20 text-red-500'
+                            : 'bg-white/5 border-white/10 text-white/20 hover:text-neon hover:border-neon/30'
+                        }`}
+                >
+                    <HeartIcon size={16} filled={user.isFollowing} />
+                </button>
+
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-4 mr-8">
                     <div className="flex items-center gap-3">
                         <div className="w-11 h-11 rounded-xl overflow-hidden bg-neon/10 border border-neon/20 flex items-center justify-center text-neon font-bold text-lg group-hover:shadow-neon transition-all duration-500">
                             {user.avatarUrl ? (
@@ -214,15 +249,27 @@ function UserCard({ user }) {
                             )}
                         </div>
                         <div>
-                            <h3 className="font-medium group-hover:text-neon transition-colors flex items-center gap-1.5">{user.name}{user.userType === 'tutor' && <VerifiedBadge size={15} />}</h3>
+                            <h3 className="font-medium group-hover:text-neon transition-colors flex items-center gap-1.5">
+                                {user.name}
+                                {user.userType === 'tutor' && <VerifiedBadge size={15} />}
+                            </h3>
                             <p className="text-white/30 text-xs flex items-center gap-1">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                                 {user.university}
                             </p>
                         </div>
                     </div>
-                    <div className={`px-2.5 py-1 rounded-lg bg-gradient-to-r ${scoreBg} text-xs font-bold border`}>
-                        {user.matchScore}%
+                </div>
+
+                {/* Stats bar */}
+                <div className="flex items-center gap-3 mb-4 text-[10px] uppercase font-bold tracking-tighter">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-white/40">
+                        <HeartIcon size={10} className={user.isFollowing ? 'text-red-500' : 'text-neon/40'} filled={user.isFollowing} />
+                        <span className="text-white">{user.followersCount || 0}</span>
+                        <span className="opacity-50">{t('userProfile.followers')}</span>
+                    </div>
+                    <div className={`px-2 py-0.5 rounded-md border text-[10px] font-black tracking-widest bg-gradient-to-r ${scoreBg}`}>
+                        {user.matchScore}% MATCH
                     </div>
                 </div>
 
@@ -233,7 +280,7 @@ function UserCard({ user }) {
                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                         </svg>
                     ))}
-                    <span className="text-white/30 text-xs ml-1">{user.rating?.toFixed(1)}</span>
+                    <span className="text-white/30 text-xs ml-1 font-mono">{user.rating?.toFixed(1)}</span>
                 </div>
 
                 {/* Skills */}
@@ -251,8 +298,8 @@ function UserCard({ user }) {
 
                 {/* Match reason */}
                 {user.matchReason && (
-                    <p className="text-white/25 text-xs line-clamp-2 flex items-start gap-1">
-                        <SparklesIcon size={12} className="flex-shrink-0 mt-0.5" />
+                    <p className="text-white/25 text-xs line-clamp-2 flex items-start gap-1 italic">
+                        <SparklesIcon size={12} className="flex-shrink-0 mt-0.5 opacity-50" />
                         {user.matchReason}
                     </p>
                 )}
@@ -271,13 +318,7 @@ function FilterIcon() {
 
 function getMockUsers() {
     return [
-        { id: '1', name: 'Айдана Касымова', university: 'КГТУ им. Раззакова', teachSkills: ['Python', 'Machine Learning', 'Data Science', 'SQL'], rating: 4.8, sessionsCount: 15, matchScore: 92, matchReason: 'Может научить вас: Python, Machine Learning. Идеальный бартер навыков!' },
-        { id: '2', name: 'Бекзат Алиев', university: 'АУЦА', teachSkills: ['UI/UX Design', 'Figma', 'Photoshop'], rating: 4.5, sessionsCount: 8, matchScore: 78, matchReason: 'Может научить вас: Figma, UI/UX Design' },
-        { id: '3', name: 'Нурай Темирова', university: 'КРСУ', teachSkills: ['Data Science', 'Python', 'Machine Learning'], rating: 4.9, sessionsCount: 22, matchScore: 85, matchReason: 'Может научить вас: Data Science. Учится в КРСУ.' },
-        { id: '4', name: 'Тимур Батырканов', university: 'КГТУ им. Раззакова', teachSkills: ['React', 'Node.js', 'TypeScript', 'DevOps'], rating: 4.6, sessionsCount: 10, matchScore: 71, matchReason: 'Хочет изучить у вас: Machine Learning, Python' },
-        { id: '5', name: 'Асель Жумабекова', university: 'АУЦА', teachSkills: ['Маркетинг', 'SEO', 'English', 'Copywriting'], rating: 4.3, sessionsCount: 7, matchScore: 55, matchReason: 'Может научить вас: English' },
-        { id: '6', name: 'Эмир Турсунов', university: 'Международный Университет Ала-Тоо', teachSkills: ['Java', 'C++', 'SQL', 'Git'], rating: 4.4, sessionsCount: 12, matchScore: 48, matchReason: 'Хочет изучить: React, UI/UX Design, Figma' },
-        { id: '7', name: 'Мира Сатылганова', university: 'АУЦА', teachSkills: ['Корейский', 'English', 'Японский'], rating: 4.7, sessionsCount: 18, matchScore: 65, matchReason: 'Может научить вас: Корейский, English' },
-        { id: '8', name: 'Дамир Усенов', university: 'КРСУ', teachSkills: ['Немецкий', 'Математика', 'Физика'], rating: 4.2, sessionsCount: 9, matchScore: 42, matchReason: 'Может научить вас: Немецкий' },
+        { id: '1', name: 'Айдана Касымова', university: 'КГТУ им. Раззакова', teachSkills: ['Python', 'Machine Learning', 'Data Science', 'SQL'], rating: 4.8, sessionsCount: 15, followersCount: 1250, matchScore: 92, matchReason: 'Может научить вас: Python, Machine Learning. Идеальный бартер навыков!' },
+        { id: '2', name: 'Бекзат Алиев', university: 'АУЦА', teachSkills: ['UI/UX Design', 'Figma', 'Photoshop'], rating: 4.5, sessionsCount: 8, followersCount: 420, matchScore: 78, matchReason: 'Может научить вас: Figma, UI/UX Design' },
     ];
 }

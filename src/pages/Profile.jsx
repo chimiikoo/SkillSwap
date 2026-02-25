@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
-import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon } from '../components/Icons';
+import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon, HeartIcon } from '../components/Icons';
 import { VerifiedBadge } from '../components/VerifiedBadge';
 import { UNIVERSITIES } from '../data/universities';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
@@ -144,7 +144,16 @@ export default function Profile() {
                             {t('profile.title')} <span className="neon-text">{t('profile.titleHL')}</span>
                             {user?.userType === 'tutor' && <VerifiedBadge size={22} />}
                         </h1>
-                        <p className="text-white/40 mt-1">{t('profile.subtitle')}</p>
+                        <div className="flex items-center gap-4 mt-2">
+                            <p className="text-white/40 text-sm flex items-center gap-1.5 shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
+                                <span className="text-white font-bold">{user?.followersCount || 0}</span> {t('userProfile.followers')}
+                            </p>
+                            <span className="w-1 h-1 rounded-full bg-neon/30 shadow-[0_0_5px_rgba(163,255,18,0.5)]" />
+                            <p className="text-white/40 text-sm flex items-center gap-1.5 shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
+                                <span className="text-white font-bold">{user?.followingCount || 0}</span> {t('userProfile.following')}
+                            </p>
+                        </div>
+                        <p className="text-white/20 text-xs mt-2 uppercase tracking-widest">{t('profile.subtitle')}</p>
                     </div>
                 </motion.div>
 

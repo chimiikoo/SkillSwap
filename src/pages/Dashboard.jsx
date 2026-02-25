@@ -7,7 +7,7 @@ import { SkillIcon } from '../components/Icons';
 import { VerifiedBadge } from '../components/VerifiedBadge';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 import {
-    CoinIcon, StarIcon, BrainIcon, SearchIcon, RocketIcon, SparklesIcon,
+    CoinIcon, StarIcon, BrainIcon, SearchIcon, RocketIcon, SparklesIcon, HeartIcon,
 } from '../components/Icons';
 
 const fadeUp = {
@@ -127,7 +127,7 @@ export default function Dashboard() {
                         <StatCard icon={<StarIcon size={22} />} label={t('dashboard.rating')} value={stats?.avgRating?.toFixed(1) || '—'} />
                     </motion.div>
                     <motion.div variants={fadeUp} custom={3}>
-                        <StatCard icon={<ChatIcon />} label={t('dashboard.reviews')} value={stats?.reviewsCount || 0} />
+                        <StatCard icon={<HeartIcon size={22} className="text-red-500" filled />} label={t('userProfile.followers')} value={stats?.followersCount || 0} />
                     </motion.div>
                 </ScrollSection>
 
