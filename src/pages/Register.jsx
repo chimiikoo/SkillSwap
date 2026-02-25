@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
 import { SKILL_CAT_KEYS } from '../i18n/translations';
 import { UNIVERSITIES } from '../data/universities';
-import { SkillIcon } from '../components/Icons';
+import { SkillIcon, GraduationIcon, UsersIcon, GlobeIcon, MapPinIcon, RocketIcon } from '../components/Icons';
 
 export default function Register() {
     const { register, verifyAccount } = useAuth();
@@ -155,7 +155,7 @@ export default function Register() {
                                                 ? 'bg-neon/15 border-neon/30 shadow-lg shadow-neon/10'
                                                 : 'bg-white/5 border-white/10 group-hover:border-white/20'
                                                 }`}>
-                                                🎓
+                                                <GraduationIcon size={32} />
                                             </div>
                                             <h4 className={`text-lg font-bold mb-1 transition-colors ${form.userType === 'student' ? 'text-neon' : 'text-white'}`}>
                                                 {t('register.roleStudent') || 'Студент'}
@@ -189,7 +189,7 @@ export default function Register() {
                                                 ? 'bg-neon/15 border-neon/30 shadow-lg shadow-neon/10'
                                                 : 'bg-white/5 border-white/10 group-hover:border-white/20'
                                                 }`}>
-                                                👨‍🏫
+                                                <UsersIcon size={32} />
                                             </div>
                                             <h4 className={`text-lg font-bold mb-1 transition-colors ${form.userType === 'tutor' ? 'text-neon' : 'text-white'}`}>
                                                 {t('register.roleTutor') || 'Репетитор'}
@@ -442,7 +442,7 @@ export default function Register() {
                                             </span>
                                         ) : (
                                             <span className="flex items-center justify-center gap-2">
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" /><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" /></svg>
+                                                <RocketIcon size={18} />
                                                 {t('register.createAccount')}
                                             </span>
                                         )}
@@ -517,7 +517,9 @@ export default function Register() {
                                                     ? 'bg-neon/15 text-neon border-neon/30 shadow-sm shadow-neon/10'
                                                     : 'bg-white/5 text-white/50 border-white/10 hover:border-white/20'
                                                     }`}>
-                                                <div className="text-2xl mb-1">{opt.icon}</div>
+                                                <div className="text-2xl mb-1 flex justify-center">
+                                                    {opt.value === 'online' ? <GlobeIcon size={24} /> : opt.value === 'offline' ? <MapPinIcon size={24} /> : <UsersIcon size={24} />}
+                                                </div>
                                                 <div className="text-xs font-medium">{opt.label}</div>
                                             </button>
                                         ))}

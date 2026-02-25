@@ -44,6 +44,7 @@ export default function Profile() {
     const [activeTab, setActiveTab] = useState('teach');
     const [activeCategory, setActiveCategory] = useState(0);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const fileInputRef = useRef(null);
 
     const toggleSkill = (type, skill) => {
@@ -61,6 +62,7 @@ export default function Profile() {
         try {
             await updateProfile(form);
             setSaved(true);
+            setIsEditing(false);
             setTimeout(() => setSaved(false), 3000);
         } catch (err) {
             alert(err.message);
@@ -139,11 +141,20 @@ export default function Profile() {
                             className="hidden"
                         />
                     </div>
-                    <div className="text-center md:text-left">
-                        <h1 className="font-display text-3xl font-bold flex items-center gap-2">
-                            {t('profile.title')} <span className="neon-text">{t('profile.titleHL')}</span>
-                            {user?.userType === 'tutor' && <VerifiedBadge size={22} />}
-                        </h1>
+                    <div className="text-center md:text-left flex-1 relative">
+                        <div className="flex items-center justify-between gap-4">
+                            <h1 className="font-display text-3xl font-bold flex items-center gap-2">
+                                <span className="text-neon">{user?.name}</span>
+                                {user?.userType === 'tutor' && <VerifiedBadge size={22} />}
+                            </h1>
+                            <button
+                                onClick={() => setIsEditing(!isEditing)}
+                                className={`p-2 rounded-xl transition-all ${isEditing ? 'bg-neon text-dark' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}
+                                title="Настройки"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                            </button>
+                        </div>
                         <div className="flex items-center gap-4 mt-2">
                             <p className="text-white/40 text-sm flex items-center gap-1.5 shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
                                 <span className="text-white font-bold">{user?.followersCount || 0}</span> {t('userProfile.followers')}
@@ -176,36 +187,82 @@ export default function Profile() {
                     </motion.div>
                 </ScrollSection>
 
-                {/* Basic info */}
-                <ScrollSection>
-                    <motion.div variants={fadeUp} className="glass-card p-6 mb-6 space-y-4">
-                        <h3 className="font-bold flex items-center gap-2 mb-1">
-                            <UserIcon />
-                            {t('profile.basicInfo')}
-                        </h3>
-                        <div>
-                            <label className="text-sm text-white/40 mb-1.5 block">{t('profile.nameLabel')}</label>
-                            <input type="text" value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); setSaved(false); }} className="input-dark" />
-                        </div>
-                        <div>
-                            <label className="text-sm text-white/40 mb-1.5 block">{t('profile.universityLabel')}</label>
-                            <select
-                                value={form.university}
-                                onChange={e => { setForm({ ...form, university: e.target.value }); setSaved(false); }}
-                                className="input-dark"
-                            >
-                                <option value="">{t('profile.universityPh')}</option>
-                                {UNIVERSITIES.map(u => (
-                                    <option key={u} value={u}>{u}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-sm text-white/40 mb-1.5 block">{t('profile.bioLabel')}</label>
-                            <textarea value={form.bio} onChange={e => { setForm({ ...form, bio: e.target.value }); setSaved(false); }} className="input-dark resize-none" rows="3" />
-                        </div>
-                    </motion.div>
-                </ScrollSection>
+                {/* Basic info (Editable or View mode) */}
+                <AnimatePresence mode="wait">
+                    {isEditing ? (
+                        <motion.div
+                            key="edit-info"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="glass-card p-6 mb-6 space-y-4 overflow-hidden"
+                        >
+                            <h3 className="font-bold flex items-center gap-2 mb-1">
+                                <UserIcon />
+                                {t('profile.basicInfo')}
+                            </h3>
+                            <div>
+                                <label className="text-sm text-white/40 mb-1.5 block">{t('profile.nameLabel')}</label>
+                                <input type="text" value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); setSaved(false); }} className="input-dark" />
+                            </div>
+                            <div>
+                                <label className="text-sm text-white/40 mb-1.5 block">{t('profile.universityLabel')}</label>
+                                <select
+                                    value={form.university}
+                                    onChange={e => { setForm({ ...form, university: e.target.value }); setSaved(false); }}
+                                    className="input-dark"
+                                >
+                                    <option value="">{t('profile.universityPh')}</option>
+                                    {UNIVERSITIES.map(u => (
+                                        <option key={u} value={u}>{u}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-sm text-white/40 mb-1.5 block">{t('profile.bioLabel')}</label>
+                                <textarea value={form.bio} onChange={e => { setForm({ ...form, bio: e.target.value }); setSaved(false); }} className="input-dark resize-none" rows="3" />
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <button onClick={() => setIsEditing(false)} className="neon-btn-outline flex-1 py-2 rounded-xl text-sm">
+                                    Отмена
+                                </button>
+                                <button onClick={handleSave} className="neon-btn flex-1 py-2 rounded-xl text-sm">
+                                    {t('profile.save')}
+                                </button>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="view-info"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mb-8"
+                        >
+                            <div className="glass-card p-6 border-neon/5 bg-neon/[0.02]">
+                                <div className="space-y-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2 rounded-lg bg-neon/10 text-neon">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 0 1 .665 6.479A11.952 11.952 0 0 0 12 20.083c-2.455 0-4.79-.738-6.825-2.026a12.083 12.083 0 0 1 .665-6.479L12 14z" /></svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-white/30 text-xs uppercase tracking-widest mb-1">{t('profile.universityLabel')}</p>
+                                            <p className="text-white font-medium">{user?.university || 'Не указано'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2 rounded-lg bg-neon/10 text-neon">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-white/30 text-xs uppercase tracking-widest mb-1">{t('profile.bioLabel')}</p>
+                                            <p className="text-white/80 leading-relaxed italic">{user?.bio || 'Привет! Я использую SkillSwap для обучения.'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Skills */}
                 <ScrollSection>

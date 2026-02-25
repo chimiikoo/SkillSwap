@@ -200,8 +200,8 @@ export const translations = {
 
         // Profile
         profile: {
-            title: 'Мой',
-            titleHL: 'профиль',
+            title: '',
+            titleHL: '',
             subtitle: 'Оформите свой профиль для лучшего подбора партнеров',
             sessionsLabel: 'Сессий',
             ratingLabel: 'Рейтинг',
@@ -236,7 +236,7 @@ export const translations = {
             reviews: 'Отзывы',
             noReviews: 'Пока нет отзывов',
             follow: 'Подписаться',
-            following: 'Вы подписаны',
+            following: 'Подписки',
             followers: 'подписчиков',
             rating: 'Рейтинг',
             // Review modal
@@ -610,8 +610,8 @@ export const translations = {
         },
 
         profile: {
-            title: 'Менин',
-            titleHL: 'профилим',
+            title: '',
+            titleHL: '',
             subtitle: 'Жакшыраак партнёр тандоо үчүн профилиңизди толтуруңуз',
             sessionsLabel: 'Сессиялар',
             ratingLabel: 'Рейтинг',
@@ -645,7 +645,7 @@ export const translations = {
             reviews: 'Пикирлер',
             noReviews: 'Азырынча пикирлер жок',
             follow: 'Жазылуу',
-            following: 'Жазылган',
+            following: 'Жазылуулар',
             followers: 'катталуучу',
             rating: 'Рейтинг',
             reviewTitle: 'Пикир калтыруу',
@@ -1011,8 +1011,8 @@ export const translations = {
         },
 
         profile: {
-            title: 'My',
-            titleHL: 'profile',
+            title: '',
+            titleHL: '',
             subtitle: 'Set up your profile for better partner matching',
             sessionsLabel: 'Sessions',
             ratingLabel: 'Rating',
