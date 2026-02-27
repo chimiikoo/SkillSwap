@@ -376,6 +376,21 @@ export const translations = {
             messagePh: 'Написать сообщение...',
         },
 
+        // Rankings
+        rankings: {
+            title: 'Доска',
+            titleHL: 'Почета',
+            topTutors: 'Топ Репетиторов',
+            subtitle: 'Лучшие из лучших. Наши лидеры, которые каждый день помогают сообществу SkillSwap расти и развиваться.',
+            allTutors: 'Все репетиторы',
+            usersCount: '{count} пользователей',
+            loading: 'Загрузка данных...',
+            rating: 'Рейтинг',
+            sessions: 'Сессии',
+            sessionsCountLabel: 'сессий',
+            profile: 'Профиль',
+        },
+
         // Skill categories
         skillCats: {
             programming: 'Программирование',
@@ -790,6 +805,21 @@ export const translations = {
             messagePh: 'Билдирүү жазыңыз...',
         },
 
+        // Rankings
+        rankings: {
+            title: 'Даңк',
+            titleHL: 'тактасы',
+            topTutors: 'Топ Репетиторлор',
+            subtitle: 'Эң мыктылардан мыктылары. SkillSwap коомчулугунун өсүшүнө жана өнүгүшүнө күн сайын жардам берген биздин лидерлер.',
+            allTutors: 'Бардык репетиторлор',
+            usersCount: '{count} колдонуучу',
+            loading: 'Маалыматтар жүктөлүүдө...',
+            rating: 'Рейтинг',
+            sessions: 'Сессиялар',
+            sessionsCountLabel: 'сессия',
+            profile: 'Профиль',
+        },
+
         skillCats: {
             programming: 'Программалоо',
             design: 'Дизайн',
@@ -1200,6 +1230,21 @@ export const translations = {
             back: 'Back',
             noMessages: 'Write the first message!',
             messagePh: 'Write a message...',
+        },
+
+        // Rankings
+        rankings: {
+            title: 'Hall of',
+            titleHL: 'Fame',
+            topTutors: 'Top Tutors',
+            subtitle: 'The best of the best. Our leaders who help the SkillSwap community grow and develop every day.',
+            allTutors: 'All Tutors',
+            usersCount: '{count} users',
+            loading: 'Loading data...',
+            rating: 'Rating',
+            sessions: 'Sessions',
+            sessionsCountLabel: 'sessions',
+            profile: 'Profile',
         },
 
         skillCats: {

@@ -525,6 +525,14 @@ export function EyeOffIcon({ size = 20, className = '' }) {
     );
 }
 
+export function CrownIcon({ size = 20, className = '' }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+        </svg>
+    );
+}
+
 // ============ SKILL ICON RESOLVER ============
 
 const SKILL_ICON_MAP = {
