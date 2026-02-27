@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion } from 'framer-motion';
+import { EyeIcon, EyeOffIcon } from '../components/Icons';
 
 export default function Login() {
     const { login } = useAuth();
@@ -11,6 +12,7 @@ export default function Login() {
     const [form, setForm] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -72,14 +74,23 @@ export default function Login() {
 
                         <div>
                             <label className="block text-sm text-white/50 mb-2">{t('login.password')}</label>
-                            <input
-                                type="password"
-                                value={form.password}
-                                onChange={e => setForm({ ...form, password: e.target.value })}
-                                className="input-dark"
-                                placeholder="••••••••"
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    value={form.password}
+                                    onChange={e => setForm({ ...form, password: e.target.value })}
+                                    className="input-dark pr-12"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-neon transition-colors"
+                                >
+                                    {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                                </button>
+                            </div>
                         </div>
 
                         <button

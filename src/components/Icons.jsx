@@ -506,6 +506,25 @@ export function DiscoveryIcon({ size = 20, className = '' }) {
     );
 }
 
+export function EyeIcon({ size = 20, className = '' }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+    );
+}
+
+export function EyeOffIcon({ size = 20, className = '' }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-7-10-7a22.28 22.28 0 0 1 2.18-2.53M9.9 4.24A12.38 12.38 0 0 1 12 4c7 0 10 7 10 7a22.83 22.83 0 0 1-4.07 5.11"></path>
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path d="M8.47 8.47a3 3 0 0 0 4.06 4.06"></path>
+        </svg>
+    );
+}
+
 // ============ SKILL ICON RESOLVER ============
 
 const SKILL_ICON_MAP = {

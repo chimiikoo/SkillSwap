@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
 import { SKILL_CAT_KEYS } from '../i18n/translations';
 import { UNIVERSITIES } from '../data/universities';
-import { SkillIcon, GraduationIcon, UsersIcon, GlobeIcon, MapPinIcon, RocketIcon } from '../components/Icons';
+import { SkillIcon, GraduationIcon, UsersIcon, GlobeIcon, MapPinIcon, RocketIcon, EyeIcon, EyeOffIcon } from '../components/Icons';
 
 export default function Register() {
     const { register, verifyAccount } = useAuth();
@@ -29,6 +29,7 @@ export default function Register() {
     const [activeCategory, setActiveCategory] = useState(0);
     const [code, setCode] = useState('');
     const [emailFailed, setEmailFailed] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const [form, setForm] = useState({
         userType: '', // 'student' or 'tutor'
@@ -250,9 +251,23 @@ export default function Register() {
                                 </div>
                                 <div>
                                     <label className="block text-sm text-white/50 mb-2">{t('register.password')}</label>
-                                    <input type="password" value={form.password}
-                                        onChange={e => setForm({ ...form, password: e.target.value })}
-                                        className="input-dark" placeholder={t('register.passwordPh')} required />
+                                    <div className="relative">
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            value={form.password}
+                                            onChange={e => setForm({ ...form, password: e.target.value })}
+                                            className="input-dark pr-12"
+                                            placeholder={t('register.passwordPh')}
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-neon transition-colors"
+                                        >
+                                            {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm text-white/50 mb-2">{t('register.university')}</label>
