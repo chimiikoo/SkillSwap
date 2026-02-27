@@ -14,6 +14,8 @@ import AdminPanel from './pages/AdminPanel';
 import Chat from './pages/Chat';
 import Communities from './pages/Communities';
 import CommunityDetail from './pages/CommunityDetail';
+import SubscriptionModal from './components/SubscriptionModal';
+import Rankings from './pages/Rankings';
 
 function ProtectedRoute({ children, adminOnly = false }) {
     const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -33,10 +35,34 @@ function ProtectedRoute({ children, adminOnly = false }) {
 
 function AppRoutes() {
     const { isAuthenticated } = useAuth();
+    const [isSubModalOpen, setIsSubModalOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        if (isAuthenticated) {
+            // 1. First login trigger
+            const hasSeenSub = localStorage.getItem('hasSeenSubscriptionFirstLogin');
+            if (!hasSeenSub) {
+                setTimeout(() => {
+                    setIsSubModalOpen(true);
+                    localStorage.setItem('hasSeenSubscriptionFirstLogin', 'true');
+                }, 1500); // Small delay for better UX
+            }
+
+            // 2. 2-minute timer trigger
+            const timer = setTimeout(() => {
+                setIsSubModalOpen(true);
+            }, 120000); // 120000 ms = 2 minutes
+
+            return () => clearTimeout(timer);
+        }
+    }, [isAuthenticated]);
+
+    // Function to trigger modal from other components (via event or prop drilling)
+    const triggerSubscription = () => setIsSubModalOpen(true);
 
     return (
-        <>
-            <Navbar />
+        <div id="app-root">
+            <Navbar onProfileClick={triggerSubscription} />
             <Routes>
                 <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Landing />} />
                 <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
@@ -49,9 +75,11 @@ function AppRoutes() {
                 <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/communities" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
                 <Route path="/community/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
+                <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
-        </>
+            <SubscriptionModal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} />
+        </div>
     );
 }
 

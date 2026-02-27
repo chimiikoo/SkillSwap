@@ -27,6 +27,8 @@ export default function Search() {
     const [query, setQuery] = useState('');
     const [skillFilter, setSkillFilter] = useState('');
     const [uniFilter, setUniFilter] = useState('');
+    const [tutorOnly, setTutorOnly] = useState(false);
+    const [minRating, setMinRating] = useState(0);
     const [sortBy, setSortBy] = useState('match');
     const [showFilters, setShowFilters] = useState(false);
 
@@ -73,7 +75,9 @@ export default function Search() {
                 u.teachSkills?.some(s => s.toLowerCase().includes(query.toLowerCase()));
             const matchesSkill = !skillFilter || u.teachSkills?.includes(skillFilter);
             const matchesUni = !uniFilter || u.university === uniFilter;
-            return matchesQuery && matchesSkill && matchesUni;
+            const matchesTutor = !tutorOnly || u.userType === 'tutor';
+            const matchesRating = !minRating || (u.rating || 0) >= minRating;
+            return matchesQuery && matchesSkill && matchesUni && matchesTutor && matchesRating;
         })
         .sort((a, b) => {
             if (sortBy === 'match') return (b.matchScore || 0) - (a.matchScore || 0);
@@ -133,28 +137,48 @@ export default function Search() {
                             transition={{ duration: 0.3 }}
                             className="overflow-hidden mb-6"
                         >
-                            <div className="glass-card p-5 grid md:grid-cols-3 gap-4">
+                            <div className="glass-card p-5 grid md:grid-cols-4 gap-4">
                                 <div>
                                     <label className="text-xs text-white/40 mb-1.5 block">{t('search.skill')}</label>
-                                    <select value={skillFilter} onChange={e => setSkillFilter(e.target.value)} className="input-dark text-sm">
+                                    <select value={skillFilter} onChange={e => setSkillFilter(e.target.value)} className="input-dark text-sm py-2">
                                         <option value="">{t('search.allSkills')}</option>
                                         {ALL_SKILLS.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="text-xs text-white/40 mb-1.5 block">{t('search.universityLabel')}</label>
-                                    <select value={uniFilter} onChange={e => setUniFilter(e.target.value)} className="input-dark text-sm">
+                                    <select value={uniFilter} onChange={e => setUniFilter(e.target.value)} className="input-dark text-sm py-2">
                                         <option value="">{t('search.allUnis')}</option>
                                         {UNIVERSITIES.filter(Boolean).map(u => <option key={u} value={u}>{u}</option>)}
                                     </select>
                                 </div>
                                 <div>
+                                    <label className="text-xs text-white/40 mb-1.5 block">Мин. Рейтинг</label>
+                                    <select value={minRating} onChange={e => setMinRating(Number(e.target.value))} className="input-dark text-sm py-2">
+                                        <option value="0">Любой</option>
+                                        <option value="4">4.0+</option>
+                                        <option value="4.5">4.5+</option>
+                                        <option value="4.8">4.8+</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label className="text-xs text-white/40 mb-1.5 block">{t('search.sortLabel')}</label>
-                                    <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="input-dark text-sm">
+                                    <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="input-dark text-sm py-2">
                                         <option value="match">{t('search.sortMatch')}</option>
                                         <option value="rating">{t('search.sortRating')}</option>
                                         <option value="sessions">{t('search.sortExp')}</option>
                                     </select>
+                                </div>
+                                <div className="md:col-span-4 flex items-center gap-3 mt-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={tutorOnly}
+                                            onChange={(e) => setTutorOnly(e.target.checked)}
+                                            className="w-4 h-4 rounded bg-dark/50 border-white/20 text-neon focus:ring-neon/50 focus:ring-offset-dark"
+                                        />
+                                        <span className="text-sm text-white/80">Только сертифицированные репетиторы</span>
+                                    </label>
                                 </div>
                             </div>
                         </motion.div>
@@ -231,8 +255,8 @@ function UserCard({ user, onFollow }) {
                 <button
                     onClick={(e) => onFollow(e, user.id, user.isFollowing)}
                     className={`absolute top-5 right-5 z-20 p-2 rounded-xl border transition-all ${user.isFollowing
-                            ? 'bg-red-500/10 border-red-500/20 text-red-500'
-                            : 'bg-white/5 border-white/10 text-white/20 hover:text-neon hover:border-neon/30'
+                        ? 'bg-red-500/10 border-red-500/20 text-red-500'
+                        : 'bg-white/5 border-white/10 text-white/20 hover:text-neon hover:border-neon/30'
                         }`}
                 >
                     <HeartIcon size={16} filled={user.isFollowing} />

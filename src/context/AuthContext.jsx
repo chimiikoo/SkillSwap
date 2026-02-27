@@ -22,6 +22,12 @@ export function AuthProvider({ children }) {
     // Background polling for unread messages every 15 seconds
     useEffect(() => {
         if (!token) return;
+
+        // Request notification permission if not asked yet
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
         const interval = setInterval(fetchUnreadCount, 15000);
         return () => clearInterval(interval);
     }, [token]);
@@ -68,7 +74,16 @@ export function AuthProvider({ children }) {
             });
             const data = await handleResponse(res);
             if (data) {
-                setUnreadCount(data.count);
+                setUnreadCount(prevCount => {
+                    // Show notification if we got a new message and page is backgrounded
+                    if (data.count > prevCount && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+                        new Notification('SkillSwap AI', {
+                            body: 'У вас новое сообщение!',
+                            icon: '/vite.svg'
+                        });
+                    }
+                    return data.count;
+                });
             }
         } catch (err) {
             console.error('Unread count fetch error:', err);

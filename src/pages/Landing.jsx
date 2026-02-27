@@ -282,7 +282,7 @@ export default function Landing() {
             </section>
 
             {/* Features */}
-            <section className="py-28 relative">
+            <section className="py-16 md:py-28 relative">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <AnimatedSection className="text-center mb-16">
                         <motion.span variants={fadeUp} className="badge-neon mb-4 inline-flex items-center gap-1.5">
@@ -294,7 +294,7 @@ export default function Landing() {
                         </motion.h2>
                     </AnimatedSection>
 
-                    <AnimatedSection className="grid md:grid-cols-3 gap-6">
+                    <AnimatedSection className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                         <FeatureCard title={t('landing.feature1Title')} desc={t('landing.feature1Desc')} icon={<BrainIcon size={24} />} />
                         <FeatureCard title={t('landing.feature2Title')} desc={t('landing.feature2Desc')} icon={<ShieldCheckIcon size={24} />} />
                         <FeatureCard title={t('landing.feature3Title')} desc={t('landing.feature3Desc')} icon={<StarIcon size={24} />} />
@@ -305,18 +305,111 @@ export default function Landing() {
                 </div>
             </section>
 
+            {/* Pricing Section */}
+            <section className="py-16 md:py-28 relative bg-white/[0.01]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <AnimatedSection className="text-center mb-16">
+                        <motion.span variants={fadeUp} className="badge-neon mb-4 inline-flex items-center gap-1.5">
+                            <CoinIcon size={14} />
+                            Premium
+                        </motion.span>
+                        <motion.h2 variants={fadeUp} className="section-title">
+                            {t('landing.pricingTitle')} <span className="neon-text">{t('landing.pricingTitleHL')}</span>
+                        </motion.h2>
+                        <motion.p variants={fadeUp} className="text-white/35 mt-4 max-w-xl mx-auto">
+                            {t('landing.pricingSubtitle')}
+                        </motion.p>
+                    </AnimatedSection>
+
+                    <AnimatedSection className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                        <PricingCard
+                            title={lang === 'ru' ? 'Недельная' : 'Weekly'}
+                            price="2.49"
+                            period={lang === 'ru' ? 'неделя' : 'week'}
+                            features={[
+                                lang === 'ru' ? 'AI поддержка' : 'AI support',
+                                lang === 'ru' ? 'Стикерпак' : 'Sticker pack',
+                                lang === 'ru' ? 'Приоритет репетиторам' : 'Tutor priority',
+                            ]}
+                        />
+                        <PricingCard
+                            title={lang === 'ru' ? 'Месячная' : 'Monthly'}
+                            price="4.99"
+                            period={lang === 'ru' ? 'месяц' : 'month'}
+                            popular
+                            features={[
+                                lang === 'ru' ? 'AI поддержка' : 'AI support',
+                                lang === 'ru' ? 'Стикерпак' : 'Sticker pack',
+                                lang === 'ru' ? 'Приоритет репетиторам' : 'Tutor priority',
+                                lang === 'ru' ? 'AI рекомендации' : 'AI recommendations',
+                            ]}
+                        />
+                        <PricingCard
+                            title={lang === 'ru' ? 'Годовая' : 'Yearly'}
+                            price="47.99"
+                            period={lang === 'ru' ? 'год' : 'year'}
+                            features={[
+                                lang === 'ru' ? 'AI поддержка' : 'AI support',
+                                lang === 'ru' ? 'Стикерпак' : 'Sticker pack',
+                                lang === 'ru' ? 'Приоритет репетиторам' : 'Tutor priority',
+                                lang === 'ru' ? 'Экономия 20%' : 'Save 20%',
+                            ]}
+                        />
+                    </AnimatedSection>
+                </div>
+            </section>
+
+            {/* Community Section */}
+            <section className="py-16 md:py-28 relative">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="glass-card overflow-hidden p-0 border-white/5 bg-gradient-to-br from-dark-300/50 to-dark-400/50">
+                        <div className="flex flex-row items-stretch">
+                            <div className="w-[60%] p-4 sm:p-8 md:p-16 text-left flex flex-col justify-center items-start">
+                                <AnimatedSection>
+                                    <motion.span variants={fadeUp} className="badge-neon mb-2 md:mb-4 inline-flex items-center gap-1.5 text-[10px] md:text-xs">
+                                        <UsersStepIcon />
+                                        Community
+                                    </motion.span>
+                                    <motion.h2 variants={fadeUp} className="font-display text-xl sm:text-3xl md:text-5xl font-bold mb-2 md:mb-6 leading-tight">
+                                        {t('landing.communityTitle')} <span className="neon-text">{t('landing.communityTitleHL')}</span>
+                                    </motion.h2>
+                                    <motion.p variants={fadeUp} className="text-white/40 text-xs sm:text-sm md:text-lg mb-4 md:mb-8 leading-relaxed line-clamp-3 md:line-clamp-none">
+                                        {t('landing.communitySubtitle')}
+                                    </motion.p>
+                                    <motion.div variants={fadeUp}>
+                                        <Link to="/communities" className="neon-btn text-xs md:text-lg px-3 py-2 md:px-8 md:py-4 rounded-xl md:rounded-2xl inline-flex items-center gap-1.5 md:gap-2">
+                                            <GlobeIcon size={16} />
+                                            {t('landing.communityBtn')}
+                                        </Link>
+                                    </motion.div>
+                                </AnimatedSection>
+                            </div>
+                            <div className="relative w-[40%] min-h-[150px] sm:min-h-[250px] md:min-h-[400px] overflow-hidden group">
+                                <motion.div
+                                    className="absolute inset-0 bg-gradient-to-tr from-neon/20 to-purple-500/20 mix-blend-overlay z-10"
+                                    animate={{ opacity: [0.3, 0.6, 0.3] }}
+                                    transition={{ duration: 5, repeat: Infinity }}
+                                />
+                                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-dark to-transparent" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* CTA Section */}
-            <section className="py-28 relative">
+            <section className="py-16 md:py-28 relative">
                 <div className="absolute inset-0 bg-glow-top pointer-events-none" />
                 <div className="absolute inset-0 bg-grid pointer-events-none opacity-50" />
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                     <AnimatedSection>
-                        <motion.div variants={scaleIn} className="glass-card p-12 md:p-16 border border-neon/10 relative overflow-hidden">
+                        <motion.div variants={scaleIn} className="glass-card p-8 md:p-16 border border-neon/10 relative overflow-hidden">
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] bg-gradient-radial from-neon/10 to-transparent blur-3xl pointer-events-none" />
-                            <h2 className="font-display text-4xl md:text-5xl font-bold mb-6 relative">
+                            <h2 className="font-display text-3xl md:text-5xl font-bold mb-4 md:mb-6 relative">
                                 {t('landing.ctaTitle')} <span className="neon-text">{t('landing.ctaTitleHL')}</span>?
                             </h2>
-                            <p className="text-white/40 text-lg mb-8 relative">
+                            <p className="text-white/40 text-base md:text-lg mb-8 relative">
                                 {t('landing.ctaSubtitle')}
                             </p>
                             <Link to="/register" className="neon-btn text-lg px-10 py-4 rounded-2xl inline-flex items-center gap-2 relative">
@@ -331,7 +424,7 @@ export default function Landing() {
             {/* Footer */}
             <footer className="border-t border-white/5 py-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8">
                                 <img src="/vite.svg" alt="SkillSwap AI" className="w-full h-full object-contain" />
@@ -340,7 +433,7 @@ export default function Landing() {
                                 <span className="text-neon">Skill</span><span className="text-white">Swap</span><span className="ml-1 text-white/50">AI</span>
                             </span>
                         </div>
-                        <p className="text-white/25 text-sm">
+                        <p className="text-white/25 text-xs md:text-sm">
                             {t('landing.rights')}
                         </p>
                     </div>
@@ -411,6 +504,39 @@ function FeatureCard({ title, desc, icon }) {
             </div>
             <h3 className="text-lg font-bold mb-2 group-hover:text-neon transition-colors duration-300">{title}</h3>
             <p className="text-white/35 text-sm leading-relaxed">{desc}</p>
+        </motion.div>
+    );
+}
+
+function PricingCard({ title, price, period, features, popular }) {
+    return (
+        <motion.div
+            variants={fadeUp}
+            className={`glass-card p-8 relative flex flex-col ${popular ? 'border-neon/40 shadow-neon/10 scale-105 z-10 bg-white/[0.03]' : 'border-white/5 bg-white/[0.01]'}`}
+        >
+            {popular && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-neon text-dark text-xs font-bold rounded-full uppercase tracking-widest shadow-[0_0_15px_rgba(163,255,18,0.5)]">
+                    Popular
+                </div>
+            )}
+            <h3 className="text-xl font-bold mb-4 text-white/90">{title}</h3>
+            <div className="flex items-baseline gap-1 mb-6">
+                <span className="text-4xl font-display font-bold text-white">${price}</span>
+                <span className="text-white/40 text-sm">/{period}</span>
+            </div>
+            <ul className="space-y-4 mb-8 flex-grow text-left">
+                {features.map((f, i) => (
+                    <li key={i} className="flex items-center gap-3 text-sm text-white/60">
+                        <svg className="w-4 h-4 text-neon flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {f}
+                    </li>
+                ))}
+            </ul>
+            <Link to="/register" className={`w-full py-3 rounded-xl font-bold text-center transition-all ${popular ? 'bg-neon text-dark hover:shadow-neon shadow-[0_0_20px_rgba(163,255,18,0.2)]' : 'bg-white/5 text-white hover:bg-white/10'}`}>
+                {popular ? 'Get Started' : 'Choose Plan'}
+            </Link>
         </motion.div>
     );
 }

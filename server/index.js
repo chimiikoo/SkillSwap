@@ -12,8 +12,13 @@ import dotenv from 'dotenv';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
+import Stripe from 'stripe';
 
 dotenv.config();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
+    apiVersion: '2023-10-16',
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -84,6 +89,10 @@ async function initDB() {
         db.run('ALTER TABLE users ADD COLUMN experience INTEGER DEFAULT 0');
         db.run('ALTER TABLE users ADD COLUMN city TEXT DEFAULT ""');
         db.run('ALTER TABLE users ADD COLUMN teachingFormat TEXT DEFAULT ""');
+    } catch (e) { }
+    // Premium column
+    try {
+        db.run('ALTER TABLE users ADD COLUMN isPremium INTEGER DEFAULT 0');
     } catch (e) { }
 
     db.run(`
@@ -348,6 +357,7 @@ function parseUser(row) {
         experience: row.experience || 0,
         city: row.city || '',
         teachingFormat: row.teachingFormat || '',
+        isPremium: !!row.isPremium,
     };
 }
 
@@ -620,6 +630,63 @@ app.get('/api/users/stats', auth, (req, res) => {
     });
 });
 
+app.post('/api/users/subscribe', auth, (req, res) => {
+    try {
+        const { planId, success } = req.body;
+        // Mock payment success logic (kept for fallback)
+        if (success || planId) {
+            db.run('UPDATE users SET isPremium = 1 WHERE id = ?', [req.userId]);
+            saveDB();
+        }
+        res.json({ success: true, message: `Subscribed to ${planId}` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// =================== STRIPE ROUTES ===================
+app.post('/api/stripe/create-checkout-session', auth, async (req, res) => {
+    try {
+        const { planId } = req.body;
+
+        let priceId = '';
+        if (planId === 'weekly') priceId = process.env.STRIPE_PRICE_WEEKLY;
+        else if (planId === 'monthly') priceId = process.env.STRIPE_PRICE_MONTHLY;
+        else if (planId === 'yearly') priceId = process.env.STRIPE_PRICE_YEARLY;
+
+        // If no price configured or mock key, simulate success
+        if (!priceId || process.env.STRIPE_SECRET_KEY === 'sk_test_mock') {
+            console.log('Mocking Stripe checkout for plan:', planId);
+
+            // Directly update user to premium in mock mode
+            db.run('UPDATE users SET isPremium = 1 WHERE id = ?', [req.userId]);
+            saveDB();
+
+            // Return early with success flag so frontend can just show success UI
+            return res.json({ mockSuccess: true });
+        }
+
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price: priceId,
+                    quantity: 1,
+                },
+            ],
+            mode: 'subscription',
+            success_url: `${process.env.FRONTEND_URL || 'http://localhost:5174'}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5174'}/dashboard?canceled=true`,
+            client_reference_id: req.userId, // We can use this in webhooks later
+        });
+
+        res.json({ id: session.id, url: session.url });
+    } catch (err) {
+        console.error('Stripe error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.put('/api/users/profile', auth, (req, res) => {
     try {
         const existing = queryOne('SELECT * FROM users WHERE id = ?', [req.userId]);
@@ -688,6 +755,34 @@ app.get('/api/users/search', auth, (req, res) => {
     }).sort((a, b) => b.matchScore - a.matchScore);
 
     res.json({ users: scoredUsers });
+});
+
+app.get('/api/users/rankings', auth, (req, res) => {
+    try {
+        const tutors = queryAll("SELECT * FROM users WHERE userType = 'tutor' AND blocked = 0 AND role != 'admin' ORDER BY rating DESC, sessionsCount DESC LIMIT 50");
+
+        const scoredTutors = tutors.map(u => {
+            const parsed = parseUser(u);
+            const fCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followedId = ?', [u.id]).count;
+
+            return {
+                id: parsed.id,
+                name: parsed.name,
+                avatarUrl: parsed.avatarUrl,
+                university: parsed.university,
+                rating: parsed.rating || 0,
+                sessionsCount: parsed.sessionsCount || 0,
+                followersCount: fCount,
+                userType: parsed.userType,
+                isPremium: parsed.isPremium
+            };
+        });
+
+        res.json({ tutors: scoredTutors });
+    } catch (err) {
+        console.error('Rankings error:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.get('/api/users/:id', auth, (req, res) => {
@@ -793,6 +888,13 @@ function calculateMatchScore(currentUser, targetUser) {
         score += 10;
     } else if (targetUser.reportCount < 2) {
         score += 5;
+    }
+
+    // 6. Premium user bonus (15 points)
+    if (targetUser.isPremium) {
+        score += 15;
+        // Don't add to reason here to keep it subtle but effective, 
+        // OR add it if requested. The user said "студентам будут в первую очередь рекомендовать репетитора с подпиской"
     }
 
     score = Math.min(Math.round(score), 100);

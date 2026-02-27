@@ -6,12 +6,42 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LanguageSwitcher from './LanguageSwitcher';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 
-export default function Navbar() {
+export default function Navbar({ onProfileClick }) {
     const { isAuthenticated, isAdmin, user, logout, unreadCount } = useAuth();
     const { t } = useLanguage();
     const location = useLocation();
     const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        return localStorage.getItem('theme') !== 'light';
+    });
+
+    useEffect(() => {
+        if (isDarkMode) {
+            document.body.classList.remove('light-mode');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.body.classList.add('light-mode');
+            localStorage.setItem('theme', 'light');
+        }
+    }, [isDarkMode]);
+
+    const handleProfileClick = (e) => {
+        // Only track if authenticated
+        if (isAuthenticated) {
+            const clicks = parseInt(sessionStorage.getItem('profileClicks') || '0') + 1;
+            sessionStorage.setItem('profileClicks', clicks.toString());
+
+            if (clicks % 3 === 0) {
+                // Don't navigate, show modal instead? 
+                // The user said "вылазила на экран пользователя каждый 3 раз при нажатии кнопки профиля"
+                // Usually this means it shows UPON clicking, but maybe also navigates.
+                // I'll trigger the modal and still allow navigation if desired, or just show modal.
+                // Let's trigger the modal.
+                if (onProfileClick) onProfileClick();
+            }
+        }
+    };
 
     const handleLogout = () => {
         logout();
@@ -51,8 +81,22 @@ export default function Navbar() {
                                     )}
                                 </NavLink>
                                 <NavLink to="/communities" current={location.pathname}>{t('nav.communities') || 'Сообщества'}</NavLink>
-                                <NavLink to="/profile" current={location.pathname}>{t('nav.profile')}</NavLink>
+                                <NavLink to="/rankings" current={location.pathname}>Рейтинг</NavLink>
+                                <NavLink to="/profile" current={location.pathname} onClick={handleProfileClick}>{t('nav.profile')}</NavLink>
                                 {isAdmin && <NavLink to="/admin" current={location.pathname}>{t('nav.admin')}</NavLink>}
+
+                                <div className="w-px h-6 bg-white/10 mx-2"></div>
+                                <button
+                                    onClick={() => setIsDarkMode(!isDarkMode)}
+                                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-neon transition-colors"
+                                    title={isDarkMode ? "Светлая тема" : "Темная тема"}
+                                >
+                                    {isDarkMode ? (
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                                    ) : (
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                                    )}
+                                </button>
                                 <div className="w-px h-6 bg-white/10 mx-2"></div>
                                 <LanguageSwitcher />
                                 <div className="w-px h-6 bg-white/10 mx-2"></div>
@@ -143,13 +187,21 @@ export default function Navbar() {
                                         </div>
                                     </MobileNavLink>
                                     <MobileNavLink to="/communities" onClick={() => setMobileOpen(false)}>{t('nav.communities') || 'Сообщества'}</MobileNavLink>
-                                    <MobileNavLink to="/profile" onClick={() => setMobileOpen(false)}>{t('nav.profile')}</MobileNavLink>
+                                    <MobileNavLink to="/rankings" onClick={() => setMobileOpen(false)}>Рейтинг</MobileNavLink>
+                                    <MobileNavLink to="/profile" onClick={(e) => { handleProfileClick(e); setMobileOpen(false); }}>{t('nav.profile')}</MobileNavLink>
                                     {isAdmin && <MobileNavLink to="/admin" onClick={() => setMobileOpen(false)}>{t('nav.admin')}</MobileNavLink>}
                                     <button
                                         onClick={() => { handleLogout(); setMobileOpen(false); }}
                                         className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
                                     >
                                         {t('nav.logout')}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setIsDarkMode(!isDarkMode)}
+                                        className="w-full text-left px-4 py-3 text-white/70 hover:text-white rounded-xl flex items-center gap-3 transition-colors"
+                                    >
+                                        {isDarkMode ? '🌞 Светлая тема' : '🌙 Темная тема'}
                                     </button>
                                 </>
                             ) : (
@@ -166,11 +218,12 @@ export default function Navbar() {
     );
 }
 
-function NavLink({ to, current, children, badge }) {
+function NavLink({ to, current, children, badge, onClick }) {
     const isActive = current === to;
     return (
         <Link
             to={to}
+            onClick={onClick}
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center ${isActive
                 ? 'text-neon bg-neon/5 shadow-[0_0_15px_rgba(163,255,18,0.1)]'
                 : badge ? 'text-neon/80 shadow-[0_0_10px_rgba(163,255,18,0.05)]' : 'text-white/60 hover:text-white hover:bg-white/5'

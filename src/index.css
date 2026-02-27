@@ -382,3 +382,72 @@ html {
   align-items: center;
   justify-content: center;
 }
+
+/* --- LIGHT MODE REWRITES --- */
+body.light-mode {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.light-mode .bg-dark {
+  background-color: #f8fafc !important;
+}
+
+.light-mode [class*="text-white"] {
+  color: #0f172a !important;
+}
+
+.light-mode [class*="text-white/40"],
+.light-mode [class*="text-white/30"],
+.light-mode [class*="text-white/20"] {
+  color: #64748b !important;
+}
+
+.light-mode [class*="text-white/60"],
+.light-mode [class*="text-white/70"],
+.light-mode [class*="text-white/80"] {
+  color: #475569 !important;
+}
+
+.light-mode [class*="bg-white/5"] {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-mode [class*="bg-white/10"] {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.light-mode [class*="border-white/10"] {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.light-mode [class*="border-white/5"] {
+  border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-mode .glass-card {
+  background: white !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.light-mode .glass-card-hover:hover {
+  background: white !important;
+  border-color: #A3FF12 !important;
+  box-shadow: 0 10px 15px -3px rgba(163, 255, 18, 0.2);
+}
+
+.light-mode .input-dark {
+  background-color: white !important;
+  color: #0f172a !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+.light-mode .input-dark::placeholder {
+  color: #94a3b8 !important;
+}
+
+.light-mode .bg-dark-200,
+.light-mode .bg-dark-300 {
+  background-color: #f1f5f9 !important;
+}

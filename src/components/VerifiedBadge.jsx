@@ -61,3 +61,17 @@ export function TutorInfoBadge({ format, experience, city, className = '' }) {
         </div>
     );
 }
+
+export function PremiumBadge({ size = 16, className = '' }) {
+    return (
+        <span
+            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold shadow-lg shadow-purple-500/20 ${className}`}
+            title="Premium Member"
+        >
+            <svg width={size - 4} height={size - 4} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+            </svg>
+            PREMIUM
+        </span>
+    );
+}

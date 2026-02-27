@@ -75,6 +75,17 @@ export const translations = {
 
             // Footer
             rights: '© 2026 SkillSwap AI. Все права защищены.',
+
+            // Pricing
+            pricingTitle: 'Выберите свой',
+            pricingTitleHL: 'премиум план',
+            pricingSubtitle: 'Получите больше от SkillSwap с нашими тарифными планами.',
+
+            // Community
+            communityTitle: 'Присоединяйтесь к',
+            communityTitleHL: 'сообществу',
+            communitySubtitle: 'Общайтесь с единомышленниками, делитесь опытом и находите вдохновение в тематических группах.',
+            communityBtn: 'Посмотреть сообщества',
         },
 
         // Login
@@ -493,6 +504,17 @@ export const translations = {
             ctaBtn: 'Акысыз аккаунт түзүү',
 
             rights: '© 2026 SkillSwap AI. Бардык укуктар корголгон.',
+
+            // Pricing
+            pricingTitle: 'Планыңызды',
+            pricingTitleHL: 'тандаңыз',
+            pricingSubtitle: 'SkillSwap программасынан көбүрөөк мүмкүнчүлүктөрдү алыңыз.',
+
+            // Community
+            communityTitle: 'Коомчулукка',
+            communityTitleHL: 'кошулуңуз',
+            communitySubtitle: 'Пикирлештер менен баарлашыңыз, тажрыйба бөлүшүңүз жана топтордон дем алыңыз.',
+            communityBtn: 'Коомчулуктарды көрүү',
         },
 
         login: {
@@ -894,6 +916,17 @@ export const translations = {
             ctaBtn: 'Create a free account',
 
             rights: '© 2026 SkillSwap AI. All rights reserved.',
+
+            // Pricing
+            pricingTitle: 'Choose your',
+            pricingTitleHL: 'premium plan',
+            pricingSubtitle: 'Get more from SkillSwap with our premium subscription tiers.',
+
+            // Community
+            communityTitle: 'Join the',
+            communityTitleHL: 'community',
+            communitySubtitle: 'Connect with like-minded students, share experiences and find inspiration in thematic groups.',
+            communityBtn: 'Browse Communities',
         },
 
         login: {

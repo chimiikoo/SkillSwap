@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
 import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon, HeartIcon, UserIcon } from '../components/Icons';
-import { VerifiedBadge } from '../components/VerifiedBadge';
+import { VerifiedBadge, PremiumBadge } from '../components/VerifiedBadge';
 import { UNIVERSITIES } from '../data/universities';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 
@@ -143,9 +143,10 @@ export default function Profile() {
                     </div>
                     <div className="text-center md:text-left flex-1 relative">
                         <div className="flex items-center justify-between gap-4">
-                            <h1 className="font-display text-3xl font-bold flex items-center gap-2">
+                            <h1 className="font-display text-3xl font-bold flex items-center gap-2 flex-wrap">
                                 <span className="text-neon">{user?.name}</span>
                                 {user?.userType === 'tutor' && <VerifiedBadge size={22} />}
+                                {user?.isPremium && <PremiumBadge size={22} />}
                             </h1>
                             <button
                                 onClick={() => setIsEditing(!isEditing)}
@@ -222,6 +223,22 @@ export default function Profile() {
                                 <label className="text-sm text-white/40 mb-1.5 block">{t('profile.bioLabel')}</label>
                                 <textarea value={form.bio} onChange={e => { setForm({ ...form, bio: e.target.value }); setSaved(false); }} className="input-dark resize-none" rows="3" />
                             </div>
+
+                            {user?.isPremium && (
+                                <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                                    <h4 className="text-purple-400 text-sm font-bold mb-3 flex items-center gap-2">
+                                        ✨ Premium Sticker Pack
+                                    </h4>
+                                    <div className="flex gap-4">
+                                        {['🔥', '🚀', '🧠', '💎'].map(sticker => (
+                                            <button key={sticker} className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl hover:bg-purple-500/20 hover:border-purple-500/30 transition-all">
+                                                {sticker}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-white/20 text-[10px] mt-2">Pick a sticker to display next to your name.</p>
+                                </div>
+                            )}
                             <div className="flex gap-3 mt-4">
                                 <button onClick={() => setIsEditing(false)} className="neon-btn-outline flex-1 py-2 rounded-xl text-sm">
                                     Отмена

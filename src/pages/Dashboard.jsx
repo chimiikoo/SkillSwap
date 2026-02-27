@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { SkillIcon } from '../components/Icons';
-import { VerifiedBadge } from '../components/VerifiedBadge';
+import { VerifiedBadge, PremiumBadge } from '../components/VerifiedBadge';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 import {
     CoinIcon, StarIcon, BrainIcon, SearchIcon, RocketIcon, SparklesIcon, HeartIcon,
@@ -51,6 +51,22 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const query = new URLSearchParams(window.location.search);
+        if (query.get('success')) {
+            // They just returned from Stripe checkout success
+            apiFetch('/users/subscribe', {
+                method: 'POST',
+                body: JSON.stringify({ success: true })
+            }).then(() => {
+                alert(t('payment.success') || 'Оплата успешно завершена! Вы теперь Premium пользователь.');
+                // clean up url
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }).catch(console.error);
+        } else if (query.get('canceled')) {
+            alert(t('payment.canceled') || 'Оплата была отменена.');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         loadData();
     }, []);
 
@@ -353,9 +369,10 @@ function MatchCard({ match }) {
                         )}
                     </div>
                     <div>
-                        <h4 className="font-medium text-sm group-hover:text-neon transition-colors flex items-center gap-1.5">
+                        <h4 className="font-medium text-sm group-hover:text-neon transition-colors flex items-center gap-1.5 flex-wrap">
                             {match.name}
                             {match.userType === 'tutor' && <VerifiedBadge size={14} />}
+                            {match.isPremium && <PremiumBadge size={14} />}
                         </h4>
                         <p className="text-white/30 text-xs">{match.university}</p>
                     </div>
