@@ -9,6 +9,7 @@ import { resolveFileUrl } from '../utils/resolveFileUrl';
 import {
     CoinIcon, StarIcon, BrainIcon, SearchIcon, RocketIcon, SparklesIcon, HeartIcon,
 } from '../components/Icons';
+import TopUpModal from '../components/TopUpModal';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -49,6 +50,7 @@ export default function Dashboard() {
     const [recCommunities, setRecCommunities] = useState([]);
     const [potentialStudents, setPotentialStudents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
     useEffect(() => {
         const query = new URLSearchParams(window.location.search);
@@ -133,19 +135,28 @@ export default function Dashboard() {
 
                 {/* Stats Grid */}
                 <ScrollSection className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                    <motion.div variants={fadeUp} custom={0}>
+                    <motion.div variants={fadeUp} custom={0} className="relative group/stat">
                         <StatCard icon={<CoinIcon size={22} />} label="SkillCoins" value={stats?.skillCoins || 0} accent />
+                        <button
+                            onClick={() => setIsTopUpOpen(true)}
+                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-neon text-dark opacity-0 group-hover/stat:opacity-100 transition-all hover:scale-110 shadow-neon"
+                            title="Пополнить баланс"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 5v14M5 12h14" /></svg>
+                        </button>
                     </motion.div>
                     <motion.div variants={fadeUp} custom={1}>
                         <StatCard icon={<CalendarIcon />} label={t('dashboard.sessionsStat')} value={stats?.sessionsCount || 0} />
                     </motion.div>
                     <motion.div variants={fadeUp} custom={2}>
-                        <StatCard icon={<StarIcon size={22} />} label={t('dashboard.rating')} value={stats?.avgRating?.toFixed(1) || '—'} />
+                        <StatCard icon={<StarIcon size={22} />} label={t('dashboard.rating')} value={Number(stats?.avgRating || 0).toFixed(1)} />
                     </motion.div>
                     <motion.div variants={fadeUp} custom={3}>
                         <StatCard icon={<HeartIcon size={22} className="text-red-500" filled />} label={t('userProfile.followers')} value={stats?.followersCount || 0} />
                     </motion.div>
                 </ScrollSection>
+
+                <TopUpModal isOpen={isTopUpOpen} onClose={() => setIsTopUpOpen(false)} />
 
                 {/* Skills Overview */}
                 <ScrollSection className="grid md:grid-cols-2 gap-6 mb-10">
@@ -190,7 +201,8 @@ export default function Dashboard() {
                     <ScrollSection className="mb-10">
                         <motion.div variants={fadeUp} className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold flex items-center gap-2">
-                                🎯 {t('dashboard.potentialStudents') || 'Потенциальные студенты'}
+                                <RocketIcon size={20} className="text-neon" />
+                                {t('dashboard.potentialStudents') || 'Потенциальные студенты'}
                             </h2>
                             <Link to="/search" className="text-neon text-sm hover:underline flex items-center gap-1">
                                 {t('dashboard.allResults')}
@@ -430,8 +442,9 @@ function CommunityCard({ community: c, onJoin }) {
                     </div>
                 </div>
                 {c.matchScore > 0 && (
-                    <div className={`px-2.5 py-1 rounded-lg bg-gradient-to-r ${scoreBg} text-xs font-bold border`}>
-                        ⚡{c.matchScore}
+                    <div className={`px-2.5 py-1 rounded-lg bg-gradient-to-r ${scoreBg} text-xs font-bold border flex items-center gap-1`}>
+                        <SparklesIcon size={12} />
+                        {c.matchScore}
                     </div>
                 )}
             </div>
@@ -455,12 +468,14 @@ function CommunityCard({ community: c, onJoin }) {
 }
 
 function SessionCard({ session }) {
+    const { t } = useLanguage();
     const statusMap = {
-        pending: { label: 'Ожидание', style: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
-        offered: { label: 'Предложено', style: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-        active: { label: 'Активно', style: 'bg-neon/10 text-neon border-neon/20' },
-        completed: { label: 'Завершено', style: 'bg-green-500/10 text-green-400 border-green-500/20' },
-        cancelled: { label: 'Отменено', style: 'bg-red-500/10 text-red-400 border-red-500/20' },
+        pending: { label: t('dashboard.statusPending') || 'Ожидание', style: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
+        offered: { label: t('dashboard.statusOffered') || 'Предложено', style: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+        active: { label: t('dashboard.statusActive') || 'Активно', style: 'bg-neon/10 text-neon border-neon/20' },
+        confirmed: { label: t('dashboard.statusActive') || 'Активно', style: 'bg-neon/10 text-neon border-neon/20' },
+        completed: { label: t('dashboard.statusCompleted') || 'Завершено', style: 'bg-green-500/10 text-green-400 border-green-500/20' },
+        cancelled: { label: t('dashboard.statusCancelled') || 'Отменено', style: 'bg-red-500/10 text-red-400 border-red-500/20' },
     };
     const st = statusMap[session.status] || statusMap.pending;
 

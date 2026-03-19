@@ -43,10 +43,12 @@ export default function Register() {
         experience: '',
         city: '',
         teachingFormat: '',
+        hourlyRate: '',
     });
 
     const totalSteps = 5; // role -> info -> teach -> learn/tutor-details -> verify
-    const isTutor = form.userType === 'tutor';
+    const isTutor = form.userType === 'tutor' || form.userType === 'school';
+    const isSchool = form.userType === 'school';
 
     const handleSubmit = async () => {
         setError('');
@@ -209,6 +211,40 @@ export default function Register() {
                                             )}
                                         </div>
                                     </button>
+
+                                    {/* School Card */}
+                                    <button
+                                        onClick={() => setForm(p => ({ ...p, userType: 'school' }))}
+                                        className={`p-6 rounded-2xl border-2 text-left transition-all duration-300 group relative overflow-hidden ${form.userType === 'school'
+                                            ? 'border-neon/50 bg-neon/5 shadow-lg shadow-neon/10'
+                                            : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
+                                            }`}
+                                    >
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-neon/5 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <div className="relative z-10">
+                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-4 border transition-all duration-300 ${form.userType === 'school'
+                                                ? 'bg-neon/15 border-neon/30 shadow-lg shadow-neon/10'
+                                                : 'bg-white/5 border-white/10 group-hover:border-white/20'
+                                                }`}>
+                                                <RocketIcon size={32} />
+                                            </div>
+                                            <h4 className={`text-lg font-bold mb-1 transition-colors ${form.userType === 'school' ? 'text-neon' : 'text-white'}`}>
+                                                {t('register.roleSchool') || 'Школа / Курсы'}
+                                            </h4>
+                                            <p className="text-white/40 text-sm leading-relaxed">
+                                                {t('register.roleSchoolDesc') || 'Мы предлагаем профессиональные курсы и обучение'}
+                                            </p>
+                                            {form.userType === 'school' && (
+                                                <motion.div
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    className="absolute top-4 right-4 w-6 h-6 rounded-full bg-neon flex items-center justify-center"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="3"><polyline points="20,6 9,17 4,12" /></svg>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    </button>
                                 </div>
 
                                 <button
@@ -238,10 +274,12 @@ export default function Register() {
                                 className="space-y-4"
                             >
                                 <div>
-                                    <label className="block text-sm text-white/50 mb-2">{t('register.name')}</label>
+                                    <label className="block text-sm text-white/50 mb-2">
+                                        {form.userType === 'school' ? (t('register.nameSchool') || 'Название школы/курса') : t('register.name')}
+                                    </label>
                                     <input type="text" value={form.name}
                                         onChange={e => setForm({ ...form, name: e.target.value })}
-                                        className="input-dark" placeholder={t('register.namePh')} required />
+                                        className="input-dark" placeholder={form.userType === 'school' ? 'SkillSwap Academy' : t('register.namePh')} required />
                                 </div>
                                 <div>
                                     <label className="block text-sm text-white/50 mb-2">{t('register.email')}</label>
@@ -269,22 +307,27 @@ export default function Register() {
                                         </button>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm text-white/50 mb-2">{t('register.university')}</label>
-                                    <select value={form.university}
-                                        onChange={e => setForm({ ...form, university: e.target.value })}
-                                        className="input-dark">
-                                        <option value="">{t('register.universityPh')}</option>
-                                        {UNIVERSITIES.map(u => (
-                                            <option key={u} value={u}>{u}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                 {form.userType !== 'school' && (
+                                    <div>
+                                        <label className="block text-sm text-white/50 mb-2">{t('register.university')}</label>
+                                        <select value={form.university}
+                                            onChange={e => setForm({ ...form, university: e.target.value })}
+                                            className="input-dark">
+                                            <option value="">{t('register.universityPh')}</option>
+                                            {UNIVERSITIES.map(u => (
+                                                <option key={u} value={u}>{u}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 <div>
                                     <label className="block text-sm text-white/50 mb-2">{t('register.bio')}</label>
                                     <textarea value={form.bio}
                                         onChange={e => setForm({ ...form, bio: e.target.value })}
-                                        className="input-dark resize-none" rows="3" placeholder={t('register.bioPh')} />
+                                        className="input-dark resize-none" rows="3" 
+                                        placeholder={form.userType === 'school' 
+                                            ? (t('register.bioSchoolPh') || 'Расскажите об истории вашей школы, успехах и методиках обучения') 
+                                            : t('register.bioPh')} />
                                 </div>
                                 <div className="flex gap-3">
                                     <button onClick={() => setStep(1)} className="neon-btn-outline flex-1 py-3 rounded-xl">
@@ -478,7 +521,9 @@ export default function Register() {
                             >
                                 <div className="text-center mb-2">
                                     <h3 className="text-lg font-bold mb-1">
-                                        {t('register.tutorDetailsTitle') || 'Расскажите о себе как о репетиторе'}
+                                        {form.userType === 'school'
+                                            ? (t('register.schoolDetailsTitle') || 'Информация о школе/курсах')
+                                            : (t('register.tutorDetailsTitle') || 'Расскажите о себе как о репетиторе')}
                                     </h3>
                                     <p className="text-white/40 text-sm">
                                         {t('register.tutorDetailsSubtitle') || 'Эта информация поможет студентам найти вас'}
@@ -487,8 +532,10 @@ export default function Register() {
 
                                 {/* Experience */}
                                 <div>
-                                    <label className="block text-sm text-white/50 mb-2">
-                                        {t('register.experienceLabel') || 'Опыт преподавания (лет)'}
+                                     <label className="block text-sm text-white/50 mb-2">
+                                        {form.userType === 'school'
+                                            ? (t('register.marketYearsLabel') || 'Лет на рынке')
+                                            : (t('register.experienceLabel') || 'Опыт преподавания (лет)')}
                                     </label>
                                     <div className="flex gap-2 flex-wrap">
                                         {['0-1', '1-3', '3-5', '5-10', '10+'].map(opt => (
@@ -527,6 +574,7 @@ export default function Register() {
                                             { value: 'both', label: t('register.formatBoth') || 'Оба', icon: '🔀' },
                                         ].map(opt => (
                                             <button key={opt.value}
+                                                type="button"
                                                 onClick={() => setForm(p => ({ ...p, teachingFormat: opt.value }))}
                                                 className={`p-3 rounded-xl text-center transition-all border ${form.teachingFormat === opt.value
                                                     ? 'bg-neon/15 text-neon border-neon/30 shadow-sm shadow-neon/10'
@@ -538,6 +586,27 @@ export default function Register() {
                                                 <div className="text-xs font-medium">{opt.label}</div>
                                             </button>
                                         ))}
+                                    </div>
+                                </div>
+
+                                {/* Hourly Rate */}
+                                <div>
+                                    <label className="block text-sm text-white/50 mb-2">
+                                        {form.userType === 'school'
+                                            ? (t('register.courseRateLabel') || 'Стоимость курса (сом)')
+                                            : (t('register.hourlyRateLabel') || 'Стоимость часа (сом)')}
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            value={form.hourlyRate}
+                                            onChange={e => setForm({ ...form, hourlyRate: e.target.value })}
+                                            className="input-dark pl-12"
+                                            placeholder={form.userType === 'school' ? 'Например: 15000' : (t('register.hourlyRatePh') || 'Например: 500')}
+                                        />
+                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 font-medium">
+                                            SOM
+                                        </div>
                                     </div>
                                 </div>
 
@@ -559,6 +628,10 @@ export default function Register() {
                                                 setError(t('register.fillFormat') || 'Выберите формат');
                                                 return;
                                             }
+                                            if (!form.hourlyRate) {
+                                                setError(t('register.fillHourlyRate') || 'Укажите стоимость');
+                                                return;
+                                            }
                                             setError('');
                                             handleSubmit();
                                         }}
@@ -572,7 +645,10 @@ export default function Register() {
                                             </span>
                                         ) : (
                                             <span className="flex items-center justify-center gap-2">
-                                                👨‍🏫 {t('register.createTutorAccount') || 'Создать аккаунт репетитора'}
+                                                {form.userType === 'school' ? '🏫' : '👨‍🏫'}
+                                                {form.userType === 'school'
+                                                    ? (t('register.createSchoolAccount') || 'Создать аккаунт школы')
+                                                    : (t('register.createTutorAccount') || 'Создать аккаунт репетитора')}
                                             </span>
                                         )}
                                     </button>

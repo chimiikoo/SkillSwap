@@ -11,7 +11,7 @@ const fadeUp = {
 
 export default function AdminPanel() {
     const { apiFetch } = useAuth();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState('overview');
     const [users, setUsers] = useState([]);
     const [reports, setReports] = useState([]);
@@ -69,10 +69,17 @@ export default function AdminPanel() {
         ));
     };
 
+    const getFilteredUsers = (roleType) => {
+        return users.filter(u => u.userType === roleType || (roleType === 'student' && !u.userType));
+    };
+
+    const isRu = language === 'ru';
     const tabs = [
         { id: 'overview', label: t('admin.overview'), icon: <ChartIcon /> },
-        { id: 'users', label: t('admin.users'), icon: <UsersIcon size={16} /> },
-        { id: 'reports', label: t('admin.reports'), icon: <AlertTriangleIcon size={16} /> },
+        { id: 'students', label: isRu ? 'Студенты' : 'Students', icon: <UsersIcon size={18} /> },
+        { id: 'tutors', label: isRu ? 'Репетиторы' : 'Tutors', icon: <StarIcon size={18} /> },
+        { id: 'schools', label: isRu ? 'Школы / Курсы' : 'Schools / Courses', icon: <BrainIcon size={18} /> },
+        { id: 'reports', label: t('admin.reports'), icon: <AlertTriangleIcon size={18} /> },
     ];
 
     if (loading) {
@@ -84,34 +91,41 @@ export default function AdminPanel() {
     }
 
     return (
-        <div className="min-h-screen bg-dark pt-20 pb-12 bg-grid">
+        <div className="min-h-[calc(100vh-80px)] bg-dark pt-16 pb-12 bg-grid flex">
             <div className="absolute top-16 left-0 right-0 h-[200px] bg-glow-top pointer-events-none" />
 
-            <div className="page-container relative z-10">
-                {/* Header */}
-                <motion.div initial="hidden" animate="visible" variants={fadeUp} className="mb-8">
-                    <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
-                        {t('admin.title')} <span className="neon-text">{t('admin.titleHL')}</span>
-                    </h1>
-                    <p className="text-white/40">{t('admin.subtitle')}</p>
-                </motion.div>
-
-                {/* Tabs */}
-                <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${activeTab === tab.id
-                                ? 'bg-neon/10 text-neon border border-neon/20'
-                                : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'
-                                }`}
-                        >
-                            <span className="flex items-center gap-1.5">{tab.icon} {tab.label}</span>
-                        </button>
-                    ))}
+            <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row gap-6 md:gap-8 mt-4">
+                {/* Sidebar */}
+                <div className="w-full md:w-64 flex-shrink-0">
+                    <motion.div initial="hidden" animate="visible" variants={fadeUp} className="mb-6 md:mb-10">
+                        <h1 className="font-display text-2xl md:text-3xl font-bold mb-1 md:mb-2">
+                            {t('admin.title')} <span className="neon-text">{t('admin.titleHL')}</span>
+                        </h1>
+                        <p className="text-white/40 text-sm hidden md:block">{t('admin.subtitle')}</p>
+                    </motion.div>
+                    
+                    <div className="glass-card p-3 md:sticky md:top-24 flex flex-row md:flex-col gap-2 overflow-x-auto scrollbar-hide">
+                        <div className="hidden md:block px-4 py-3 mb-1 border-b border-white/5">
+                            <h2 className="text-[10px] font-black text-white/30 uppercase tracking-widest">Dashboard Menu</h2>
+                        </div>
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap transition-all text-left flex flex-shrink-0 items-center justify-start gap-3 ${activeTab === tab.id
+                                    ? 'bg-neon/10 text-neon border border-neon/30 shadow-[0_0_15px_rgba(163,255,18,0.1)]'
+                                    : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'
+                                    }`}
+                            >
+                                <span className={activeTab === tab.id ? 'text-neon' : 'text-white/40'}>{tab.icon}</span> 
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
+                {/* Main Content Area */}
+                <div className="flex-1 overflow-x-hidden min-h-[500px]">
                 {/* Overview Tab */}
                 {activeTab === 'overview' && (
                     <motion.div initial="hidden" animate="visible" variants={fadeUp}>
@@ -178,67 +192,110 @@ export default function AdminPanel() {
                     </motion.div>
                 )}
 
-                {/* Users Tab */}
-                {activeTab === 'users' && (
-                    <motion.div initial="hidden" animate="visible" variants={fadeUp}>
-                        <div className="glass-card overflow-hidden">
+                {/* Users Tabs (Students, Tutors, Schools) */}
+                {['students', 'tutors', 'schools'].includes(activeTab) && (
+                    <motion.div initial="hidden" animate="visible" variants={fadeUp} key={activeTab}>
+                        <div className="glass-card overflow-hidden !p-0">
+                            <div className="px-6 py-5 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/[0.01]">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-neon/10 border border-neon/20 flex items-center justify-center text-neon">
+                                        {tabs.find(t => t.id === activeTab)?.icon}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-white/90">
+                                            {tabs.find(t => t.id === activeTab)?.label}
+                                        </h2>
+                                        <p className="text-xs text-white/40 mt-0.5">Управление пользователями</p>
+                                    </div>
+                                </div>
+                                <span className="px-3 py-1.5 rounded-full bg-white/5 text-white/50 text-xs font-bold uppercase tracking-widest border border-white/10 w-fit">
+                                    {getFilteredUsers(activeTab === 'schools' ? 'school' : activeTab.slice(0, -1)).length} total
+                                </span>
+                            </div>
+                            {getFilteredUsers(activeTab === 'schools' ? 'school' : activeTab.slice(0, -1)).length === 0 ? (
+                                <div className="p-16 text-center">
+                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 text-white/20">
+                                        <UsersIcon size={24} />
+                                    </div>
+                                    <p className="text-white/40">{isRu ? 'Нет пользователей в данной категории' : 'No users in this category'}</p>
+                                </div>
+                            ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead>
-                                        <tr className="border-b border-white/5">
-                                            <th className="text-left px-4 py-3 text-xs text-white/40 font-medium">{t('admin.userCol')}</th>
-                                            <th className="text-left px-4 py-3 text-xs text-white/40 font-medium">{t('admin.uniCol')}</th>
-                                            <th className="text-left px-4 py-3 text-xs text-white/40 font-medium">{t('admin.ratingCol')}</th>
-                                            <th className="text-left px-4 py-3 text-xs text-white/40 font-medium">{t('admin.sessionsCol')}</th>
-                                            <th className="text-left px-4 py-3 text-xs text-white/40 font-medium">{t('admin.reportsCol')}</th>
-                                            <th className="text-left px-4 py-3 text-xs text-white/40 font-medium">{t('admin.statusCol')}</th>
-                                            <th className="text-left px-4 py-3 text-xs text-white/40 font-medium">{t('admin.actionCol')}</th>
+                                        <tr className="border-b border-white/5 bg-white/[0.02]">
+                                            <th className="text-left px-6 py-4 text-xs text-white/30 uppercase tracking-widest font-bold">{t('admin.userCol')}</th>
+                                            <th className="text-left px-6 py-4 text-xs text-white/30 uppercase tracking-widest font-bold">{t('admin.uniCol')} / City</th>
+                                            <th className="text-left px-6 py-4 text-xs text-white/30 uppercase tracking-widest font-bold">Premium</th>
+                                            <th className="text-left px-6 py-4 text-xs text-white/30 uppercase tracking-widest font-bold">{t('admin.ratingCol')}</th>
+                                            <th className="text-left px-6 py-4 text-xs text-white/30 uppercase tracking-widest font-bold">{t('admin.sessionsCol')}</th>
+                                            <th className="text-left px-6 py-4 text-xs text-white/30 uppercase tracking-widest font-bold">{t('admin.reportsCol')}</th>
+                                            <th className="text-left px-6 py-4 text-xs text-white/30 uppercase tracking-widest font-bold">{t('admin.statusCol')}</th>
+                                            <th className="text-left px-6 py-4 text-xs text-white/30 uppercase tracking-widest font-bold text-right">{t('admin.actionCol')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {users.map(user => (
-                                            <tr key={user.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-lg bg-neon/10 border border-neon/20 flex items-center justify-center text-neon text-sm font-bold">
+                                        {getFilteredUsers(activeTab === 'schools' ? 'school' : activeTab.slice(0, -1)).map(user => (
+                                            <tr key={user.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shadow-sm ${
+                                                            user.userType === 'school' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                                                            user.userType === 'tutor' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                                                            'bg-neon/10 text-neon border border-neon/20'
+                                                        }`}>
                                                             {user.name?.charAt(0)}
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-medium">{user.name}</p>
-                                                            <p className="text-xs text-white/30">{user.email}</p>
+                                                            <p className="text-sm font-bold text-white/90">{user.name}</p>
+                                                            <p className="text-xs text-white/40 mt-0.5">{user.email}</p>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm text-white/50 max-w-xs truncate" title={user.university}>{user.university}</td>
-                                                <td className="px-4 py-3 text-sm">{user.rating?.toFixed(1)}</td>
-                                                <td className="px-4 py-3 text-sm text-white/50">{user.sessionsCount}</td>
-                                                <td className="px-4 py-3">
-                                                    <span className={`text-sm ${user.reportCount >= 3 ? 'text-red-400' : user.reportCount > 0 ? 'text-yellow-400' : 'text-white/30'}`}>
+                                                <td className="px-6 py-4 text-sm text-white/50 max-w-[150px] truncate" title={user.university || user.city}>
+                                                    {user.university || user.city || '—'}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {user.isPremium ? (
+                                                        <span className="text-neon text-[10px] font-black px-2.5 py-1 bg-neon/10 rounded-md border border-neon/20 uppercase tracking-widest">
+                                                            PRO
+                                                        </span>
+                                                    ) : <span className="text-white/20 text-xs">—</span>}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded w-max">
+                                                        <StarIcon size={12} className="text-yellow-400" />
+                                                        <span className="text-sm font-medium">{user.rating?.toFixed(1) || '0.0'}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-medium">{user.sessionsCount}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`text-sm font-medium px-2.5 py-1 rounded-md ${user.reportCount >= 3 ? 'bg-red-500/10 text-red-400' : user.reportCount > 0 ? 'bg-yellow-500/10 text-yellow-400' : 'text-white/30'}`}>
                                                         {user.reportCount}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3">
-                                                    <span className={`badge border text-xs ${user.blocked
-                                                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                                                        : 'bg-neon/10 text-neon border-neon/20'
-                                                        }`}>
-                                                        {user.blocked ? t('admin.blocked') : t('admin.activeStatus')}
-                                                    </span>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-2 h-2 rounded-full ${user.blocked ? 'bg-red-500' : 'bg-neon shadow-[0_0_8px_rgba(163,255,18,0.5)]'}`} />
+                                                        <span className={`text-xs font-bold ${user.blocked ? 'text-red-400' : 'text-white/60'}`}>
+                                                            {user.blocked ? t('admin.blocked') : t('admin.activeStatus')}
+                                                        </span>
+                                                    </div>
                                                 </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex gap-2">
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex gap-2 justify-end">
                                                         <button
                                                             onClick={() => handleBlockUser(user.id)}
-                                                            className={`text-xs px-3 py-1.5 rounded-lg transition-all ${user.blocked
-                                                                ? 'bg-neon/10 text-neon hover:bg-neon/20'
-                                                                : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                                                            className={`text-xs px-3 py-2 rounded-xl transition-all font-medium ${user.blocked
+                                                                ? 'bg-neon/10 text-neon hover:bg-neon/20 border border-neon/20'
+                                                                : 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
                                                                 }`}
                                                         >
                                                             {user.blocked ? t('admin.unblock') : t('admin.block')}
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteUser(user.id)}
-                                                            className="text-white/20 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all"
+                                                            className="text-white/20 hover:text-red-400 p-2 rounded-xl hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20"
                                                             title={t('admin.deleteUser')}
                                                         >
                                                             <TrashIcon size={16} />
@@ -250,6 +307,7 @@ export default function AdminPanel() {
                                     </tbody>
                                 </table>
                             </div>
+                            )}
                         </div>
                     </motion.div>
                 )}
@@ -306,6 +364,7 @@ export default function AdminPanel() {
                         )}
                     </motion.div>
                 )}
+                </div>
             </div>
         </div>
     );
@@ -356,12 +415,12 @@ function getMockStats() {
 
 function getMockUsers() {
     return [
-        { id: '1', name: 'Айдана Касымова', email: 'aidana@mail.kg', university: 'КГТУ им. И. Раззакова', rating: 4.8, sessionsCount: 15, reportCount: 0, blocked: false },
-        { id: '2', name: 'Бекзат Алиев', email: 'bekzat@mail.kg', university: 'Американский Университет Центральной Азии (АУЦА)', rating: 4.5, sessionsCount: 8, reportCount: 1, blocked: false },
-        { id: '3', name: 'Нурай Темирова', email: 'nuray@mail.kg', university: 'Кыргызско-Российский Славянский университет (КРСУ)', rating: 4.9, sessionsCount: 22, reportCount: 0, blocked: false },
-        { id: '4', name: 'Тимур Батырканов', email: 'timur@mail.kg', university: 'КГТУ им. И. Раззакова', rating: 4.6, sessionsCount: 10, reportCount: 2, blocked: false },
-        { id: '5', name: 'Марат Сатыбалдиев', email: 'marat@mail.kg', university: 'Бишкекский гуманитарный университет им. К. Карасаева (БГУ)', rating: 2.1, sessionsCount: 3, reportCount: 4, blocked: true },
-        { id: '6', name: 'Асель Жумабекова', email: 'asel@mail.kg', university: 'Американский Университет Центральной Азии (АУЦА)', rating: 4.3, sessionsCount: 7, reportCount: 0, blocked: false },
+        { id: '1', name: 'Айдана Касымова', email: 'aidana@mail.kg', university: 'КГТУ им. И. Раззакова', rating: 4.8, sessionsCount: 15, reportCount: 0, blocked: false, userType: 'tutor', isPremium: true, city: 'Бишкек' },
+        { id: '2', name: 'Бекзат Алиев', email: 'bekzat@mail.kg', university: 'АУЦА', rating: 4.5, sessionsCount: 8, reportCount: 1, blocked: false, userType: 'student', isPremium: false },
+        { id: '3', name: 'Нурай Темирова', email: 'nuray@mail.kg', university: 'КРСУ', rating: 4.9, sessionsCount: 22, reportCount: 0, blocked: false, userType: 'student', isPremium: true },
+        { id: '4', name: 'GeekBrains', email: 'info@geekbrains.kg', university: '', rating: 4.6, sessionsCount: 150, reportCount: 0, blocked: false, userType: 'school', isPremium: true, city: 'Бишкек' },
+        { id: '5', name: 'Марат Сатыбалдиев', email: 'marat@mail.kg', university: 'БГУ', rating: 2.1, sessionsCount: 3, reportCount: 4, blocked: true, userType: 'tutor', isPremium: false },
+        { id: '6', name: 'Асель Жумабекова', email: 'asel@mail.kg', university: 'АУЦА', rating: 4.3, sessionsCount: 7, reportCount: 0, blocked: false, userType: 'student', isPremium: false },
     ];
 }
 

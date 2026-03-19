@@ -8,6 +8,7 @@ import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon, He
 import { VerifiedBadge, PremiumBadge } from '../components/VerifiedBadge';
 import { UNIVERSITIES } from '../data/universities';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
+import TopUpModal from '../components/TopUpModal';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -38,13 +39,35 @@ export default function Profile() {
         bio: user?.bio || '',
         teachSkills: user?.teachSkills || [],
         learnSkills: user?.learnSkills || [],
+        courses: user?.courses || [],
     });
+
+    const handleAddCourse = () => {
+        setForm(prev => ({ ...prev, courses: [...(prev.courses || []), { title: '', price: '', duration: '' }] }));
+        setSaved(false);
+    };
+
+    const handleCourseChange = (idx, field, value) => {
+        setForm(prev => {
+            const newCols = [...prev.courses];
+            newCols[idx] = { ...newCols[idx], [field]: value };
+            return { ...prev, courses: newCols };
+        });
+        setSaved(false);
+    };
+
+    const handleRemoveCourse = (idx) => {
+        setForm(prev => ({ ...prev, courses: prev.courses.filter((_, i) => i !== idx) }));
+        setSaved(false);
+    };
+
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('teach');
     const [activeCategory, setActiveCategory] = useState(0);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isTopUpOpen, setIsTopUpOpen] = useState(false);
     const fileInputRef = useRef(null);
 
     const toggleSkill = (type, skill) => {
@@ -111,6 +134,48 @@ export default function Profile() {
             <div className="absolute top-16 left-0 right-0 h-[200px] bg-glow-top pointer-events-none" />
 
             <div className="page-container relative z-10 max-w-3xl">
+                {user?.userType === 'school' && !isEditing ? (
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
+                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="relative shrink-0 group">
+                            <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden p-1 bg-gradient-to-tr from-neon via-purple-500 to-pink-500 shadow-[0_0_30px_rgba(163,255,18,0.2)]">
+                                <div className="w-full h-full rounded-full overflow-hidden bg-dark border-4 border-dark flex items-center justify-center text-neon text-5xl font-bold cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                                    {user?.avatarUrl ? <img src={resolveFileUrl(user.avatarUrl)} className="w-full h-full object-cover" /> : user.name?.charAt(0)}
+                                </div>
+                            </div>
+                            <div className="absolute -bottom-2 right-2">
+                                <VerifiedBadge size={28} className="drop-shadow-[0_0_8px_rgba(163,255,18,0.5)]" />
+                            </div>
+                            <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" />
+                        </motion.div>
+
+                        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left">
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-4">
+                                <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight">{user?.name}</h1>
+                                <button onClick={() => setIsEditing(true)} className="glass-btn px-4 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 border border-white/20 hover:border-white/40">
+                                    Редактировать
+                                </button>
+                            </div>
+                            <div className="flex items-center gap-6 text-sm md:text-base font-medium mb-5">
+                                <div className="flex flex-col md:flex-row items-center gap-1">
+                                    <span className="text-white font-bold">{user?.courses?.length || 0}</span>
+                                    <span className="text-white/40 font-normal">курсов</span>
+                                </div>
+                                <div className="flex flex-col md:flex-row items-center gap-1">
+                                    <span className="text-white font-bold">{user?.followersCount || 0}</span>
+                                    <span className="text-white/40 font-normal">{t('userProfile.followers')}</span>
+                                </div>
+                                <div className="flex flex-col md:flex-row items-center gap-1">
+                                    <span className="text-white font-bold">{user?.followingCount || 0}</span>
+                                    <span className="text-white/40 font-normal">{t('userProfile.following')}</span>
+                                </div>
+                            </div>
+                            <div className="max-w-xl">
+                                <h2 className="text-sm font-bold mb-1 text-white/90">{user?.name} — Образовательная платформа</h2>
+                                <p className="text-white/60 text-sm leading-relaxed whitespace-pre-wrap">{user?.bio || 'У нас лучшие курсы! Присоединяйтесь.'}</p>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col md:flex-row items-center gap-6">
                     <div className="relative group">
                         <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-neon/20 bg-white/5 shadow-neon/10 group-hover:border-neon transition-all duration-300">
@@ -168,13 +233,21 @@ export default function Profile() {
                         <p className="text-white/20 text-xs mt-2 uppercase tracking-widest">{t('profile.subtitle')}</p>
                     </div>
                 </motion.div>
+                )}
 
-                {/* Stats overview */}
+                {user?.userType !== 'school' && (
+
                 <ScrollSection className="grid grid-cols-3 gap-3 mb-8">
-                    <motion.div variants={fadeUp} className="glass-card p-4 text-center group">
+                    <motion.div variants={fadeUp} className="glass-card p-4 text-center group relative">
                         <CoinIcon size={20} className="mx-auto mb-2" />
                         <div className="text-xl font-bold">{user?.skillCoins || 0}</div>
                         <div className="text-white/30 text-xs">SkillCoins</div>
+                        <button
+                            onClick={() => setIsTopUpOpen(true)}
+                            className="absolute top-1 right-1 p-1 rounded-lg bg-neon text-dark opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-neon"
+                        >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 5v14M5 12h14" /></svg>
+                        </button>
                     </motion.div>
                     <motion.div variants={fadeUp} className="glass-card p-4 text-center group">
                         <StarIcon size={20} className="mx-auto mb-2" />
@@ -187,6 +260,7 @@ export default function Profile() {
                         <div className="text-white/30 text-xs">{t('profile.sessionsLabel')}</div>
                     </motion.div>
                 </ScrollSection>
+                )}
 
                 {/* Basic info (Editable or View mode) */}
                 <AnimatePresence mode="wait">
@@ -224,6 +298,26 @@ export default function Profile() {
                                 <textarea value={form.bio} onChange={e => { setForm({ ...form, bio: e.target.value }); setSaved(false); }} className="input-dark resize-none" rows="3" />
                             </div>
 
+                            {user?.userType === 'school' && (
+                                <div className="border-t border-white/10 pt-4 mt-4">
+                                    <h4 className="font-bold mb-3 flex items-center justify-between">
+                                        Управление курсами
+                                        <button onClick={handleAddCourse} type="button" className="text-neon text-xs hover:underline bg-neon/10 px-2 py-1 rounded-md">+ Добавить курс</button>
+                                    </h4>
+                                    {form.courses.map((course, idx) => (
+                                        <div key={idx} className="bg-white/5 border border-white/10 p-4 rounded-xl mb-3 relative group transition hover:border-white/20">
+                                            <button onClick={() => handleRemoveCourse(idx)} type="button" className="absolute top-2 right-2 text-white/30 hover:text-red-400">✕</button>
+                                            <div className="grid grid-cols-2 gap-3 mb-2 pt-2">
+                                                <input type="text" placeholder="Название (например, Python Basics)" value={course.title} onChange={e => handleCourseChange(idx, 'title', e.target.value)} className="input-dark col-span-2 text-sm" />
+                                                <input type="text" placeholder="Цена (например, 5000 СОМ)" value={course.price} onChange={e => handleCourseChange(idx, 'price', e.target.value)} className="input-dark text-sm" />
+                                                <input type="text" placeholder="Длит-ность (напр. 3 мес.)" value={course.duration} onChange={e => handleCourseChange(idx, 'duration', e.target.value)} className="input-dark text-sm" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {form.courses.length === 0 && <p className="text-white/30 text-xs">Нет добавленных курсов</p>}
+                                </div>
+                            )}
+
                             {user?.isPremium && (
                                 <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
                                     <h4 className="text-purple-400 text-sm font-bold mb-3 flex items-center gap-2">
@@ -248,7 +342,7 @@ export default function Profile() {
                                 </button>
                             </div>
                         </motion.div>
-                    ) : (
+                    ) : user?.userType !== 'school' ? (
                         <motion.div
                             key="view-info"
                             initial={{ opacity: 0, y: -10 }}
@@ -278,10 +372,55 @@ export default function Profile() {
                                 </div>
                             </div>
                         </motion.div>
-                    )}
+                    ) : null}
                 </AnimatePresence>
 
+                {/* SCHOOL COURSES FEED (View Mode) */}
+                {user?.userType === 'school' && !isEditing && (
+                    <ScrollSection className="mb-8">
+                        {/* Feed Tabs (Instagram Style) */}
+                        <div className="flex items-center justify-center border-t border-white/10 mb-6">
+                            <button className="flex items-center gap-2 px-4 py-4 border-t border-white text-white text-xs font-bold uppercase tracking-widest">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                Мои Курсы
+                            </button>
+                        </div>
+
+                        {(!user.courses || user.courses.length === 0) ? (
+                            <div className="text-center py-12 px-4 border border-white/5 rounded-2xl bg-white/[0.02]">
+                                <h3 className="text-xl font-bold mb-2">Пока нет курсов</h3>
+                                <p className="text-white/40 text-sm max-w-sm mx-auto">Добавьте курсы в настройках профиля, чтобы они появились здесь.</p>
+                                <button onClick={() => setIsEditing(true)} className="mt-4 neon-btn outline px-6 py-2 rounded-xl text-sm border border-neon/50">Добавить курс</button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4">
+                                {user.courses.map((course, idx) => (
+                                    <motion.div variants={fadeUp} custom={idx} key={idx} className="aspect-[4/5] bg-white/5 border border-white/10 rounded-md md:rounded-xl relative group flex flex-col p-4 md:p-6 overflow-hidden cursor-pointer hover:border-neon/30 transition-all">
+                                        <div className={`absolute inset-0 bg-gradient-to-br from-neon/10 via-dark to-purple-500/10 opacity-80 group-hover:scale-105 transition-transform duration-500`} />
+                                        <div className="relative z-10 flex flex-col h-full">
+                                            <div className="flex-1 flex items-center justify-center">
+                                                <h3 className="font-display font-bold text-center text-lg md:text-2xl leading-tight text-white group-hover:text-neon transition-colors drop-shadow-md">
+                                                    {course.title || 'Безымянный курс'}
+                                                </h3>
+                                            </div>
+                                            <div className="flex items-center justify-between mt-auto">
+                                                <span className="px-2.5 py-1 bg-white/10 backdrop-blur-md border border-white/10 text-white text-[10px] md:text-xs font-bold rounded-lg truncate max-w-[70%]">
+                                                    {course.duration || 'Длительность?'}
+                                                </span>
+                                                <span className="px-2.5 py-1 bg-neon text-dark text-[10px] md:text-xs font-black rounded-lg shadow-[0_0_10px_rgba(163,255,18,0.3)] shrink-0">
+                                                    {course.price || 'Цена?'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
+                    </ScrollSection>
+                )}
+
                 {/* Skills */}
+                {user?.userType !== 'school' && (
                 <ScrollSection>
                     <motion.div variants={fadeUp} className="glass-card p-6 mb-6">
                         <div className="flex items-center gap-2 mb-4">
@@ -361,6 +500,7 @@ export default function Profile() {
                         </div>
                     </motion.div>
                 </ScrollSection>
+                )}
 
                 {/* Save */}
                 <motion.div
@@ -393,6 +533,8 @@ export default function Profile() {
                         </motion.span>
                     )}
                 </motion.div>
+                
+                <TopUpModal isOpen={isTopUpOpen} onClose={() => setIsTopUpOpen(false)} />
             </div>
         </div>
     );

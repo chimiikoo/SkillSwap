@@ -317,43 +317,53 @@ export default function Landing() {
                             {t('landing.pricingTitle')} <span className="neon-text">{t('landing.pricingTitleHL')}</span>
                         </motion.h2>
                         <motion.p variants={fadeUp} className="text-white/35 mt-4 max-w-xl mx-auto">
-                            {t('landing.pricingSubtitle')}
+                            {lang === 'ru' ? '1 месяц БЕСПЛАТНО пробная версия для всех тарифов. Затем списывается ежемесячная плата. Отмените в любой момент, чтобы вернуться на ограниченную версию.' : '1 month FREE trial for all plans. Then billed monthly. Cancel anytime to return to the limited version.'}
                         </motion.p>
                     </AnimatedSection>
 
-                    <AnimatedSection className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                    <AnimatedSection className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-6 max-w-6xl mx-auto">
                         <PricingCard
-                            title={lang === 'ru' ? 'Недельная' : 'Weekly'}
-                            price="2.49"
-                            period={lang === 'ru' ? 'неделя' : 'week'}
+                            title={lang === 'ru' ? 'Студент' : 'Student'}
+                            price="199"
+                            period={lang === 'ru' ? 'месяц' : 'month'}
+                            discountLabel={lang === 'ru' ? 'Первый месяц бесплатно' : 'First month free'}
                             features={[
-                                lang === 'ru' ? 'AI поддержка' : 'AI support',
-                                lang === 'ru' ? 'Стикерпак' : 'Sticker pack',
-                                lang === 'ru' ? 'Приоритет репетиторам' : 'Tutor priority',
+                                lang === 'ru' ? 'Отправка сообщений' : 'Send messages',
+                                lang === 'ru' ? 'ИИ-подбор репетиторов' : 'AI tutor matching',
+                                lang === 'ru' ? 'Приоритетная поддержка' : 'Priority support',
+                                lang === 'ru' ? 'Специальный набор стикеров' : 'Special sticker pack',
+                                lang === 'ru' ? 'Без рекламы' : 'Ad-free experience',
                             ]}
+                            lang={lang}
                         />
                         <PricingCard
-                            title={lang === 'ru' ? 'Месячная' : 'Monthly'}
-                            price="4.99"
+                            title={lang === 'ru' ? 'Репетитор' : 'Tutor'}
+                            price="399"
                             period={lang === 'ru' ? 'месяц' : 'month'}
                             popular
+                            discountLabel={lang === 'ru' ? 'Первый месяц бесплатно' : 'First month free'}
                             features={[
-                                lang === 'ru' ? 'AI поддержка' : 'AI support',
-                                lang === 'ru' ? 'Стикерпак' : 'Sticker pack',
-                                lang === 'ru' ? 'Приоритет репетиторам' : 'Tutor priority',
-                                lang === 'ru' ? 'AI рекомендации' : 'AI recommendations',
+                                lang === 'ru' ? 'Приоритет в поиске учеников' : 'Priority student search',
+                                lang === 'ru' ? 'Неограниченное число сессий' : 'Unlimited sessions',
+                                lang === 'ru' ? 'AI рекомендации для роста' : 'AI growth recommendations',
+                                lang === 'ru' ? 'Значок Verified' : 'Verified badge',
+                                lang === 'ru' ? 'Отправка сообщений' : 'Send messages',
                             ]}
+                            lang={lang}
                         />
                         <PricingCard
-                            title={lang === 'ru' ? 'Годовая' : 'Yearly'}
-                            price="47.99"
-                            period={lang === 'ru' ? 'год' : 'year'}
+                            title={lang === 'ru' ? 'Курсы / Школа' : 'School'}
+                            price="990"
+                            period={lang === 'ru' ? 'месяц' : 'month'}
+                            discountLabel={lang === 'ru' ? 'Первый месяц бесплатно' : 'First month free'}
                             features={[
-                                lang === 'ru' ? 'AI поддержка' : 'AI support',
-                                lang === 'ru' ? 'Стикерпак' : 'Sticker pack',
-                                lang === 'ru' ? 'Приоритет репетиторам' : 'Tutor priority',
-                                lang === 'ru' ? 'Экономия 20%' : 'Save 20%',
+                                lang === 'ru' ? 'Безлимитное размещение курсов' : 'Unlimited course listings',
+                                lang === 'ru' ? 'Первые строчки в поиске' : 'Top search rankings',
+                                lang === 'ru' ? 'Студенты от нейросети' : 'AI student matching',
+                                lang === 'ru' ? 'Брендированная страница' : 'Branded profile page',
+                                lang === 'ru' ? 'Аналитика популярности' : 'Popularity analytics',
                             ]}
+                            lang={lang}
                         />
                     </AnimatedSection>
                 </div>
@@ -421,24 +431,6 @@ export default function Landing() {
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="border-t border-white/5 py-12">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8">
-                                <img src="/vite.svg" alt="SkillSwap AI" className="w-full h-full object-contain" />
-                            </div>
-                            <span className="font-display font-bold text-sm">
-                                <span className="text-neon">Skill</span><span className="text-white">Swap</span><span className="ml-1 text-white/50">AI</span>
-                            </span>
-                        </div>
-                        <p className="text-white/25 text-xs md:text-sm">
-                            {t('landing.rights')}
-                        </p>
-                    </div>
-                </div>
-            </footer>
         </div>
     );
 }
@@ -508,7 +500,7 @@ function FeatureCard({ title, desc, icon }) {
     );
 }
 
-function PricingCard({ title, price, period, features, popular }) {
+function PricingCard({ title, price, period, features, popular, oldPrice, discountLabel, lang }) {
     return (
         <motion.div
             variants={fadeUp}
@@ -516,13 +508,29 @@ function PricingCard({ title, price, period, features, popular }) {
         >
             {popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-neon text-dark text-xs font-bold rounded-full uppercase tracking-widest shadow-[0_0_15px_rgba(163,255,18,0.5)]">
-                    Popular
+                    {lang === 'ru' ? 'Популярный' : 'Popular'}
                 </div>
             )}
             <h3 className="text-xl font-bold mb-4 text-white/90">{title}</h3>
-            <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-display font-bold text-white">${price}</span>
-                <span className="text-white/40 text-sm">/{period}</span>
+            <div className="flex flex-col gap-1 mb-6 min-h-[110px] justify-end">
+                {oldPrice && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-white/20 line-through text-base">{oldPrice} СОМ</span>
+                        <span className="bg-red-500/20 text-red-400 text-[10px] px-1.5 py-0.5 rounded font-bold">
+                            -60%
+                        </span>
+                    </div>
+                )}
+                <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-display font-bold text-white">{price} СОМ</span>
+                    <span className="text-white/40 text-sm">/{period}</span>
+                </div>
+                {discountLabel && (
+                    <div className="mt-2 py-1.5 px-3 bg-neon/10 border border-neon/20 rounded-lg text-[10px] text-neon font-bold uppercase tracking-wider flex items-center gap-1.5 w-fit">
+                        <SparklesIcon size={12} />
+                        {discountLabel}
+                    </div>
+                )}
             </div>
             <ul className="space-y-4 mb-8 flex-grow text-left">
                 {features.map((f, i) => (
@@ -535,7 +543,7 @@ function PricingCard({ title, price, period, features, popular }) {
                 ))}
             </ul>
             <Link to="/register" className={`w-full py-3 rounded-xl font-bold text-center transition-all ${popular ? 'bg-neon text-dark hover:shadow-neon shadow-[0_0_20px_rgba(163,255,18,0.2)]' : 'bg-white/5 text-white hover:bg-white/10'}`}>
-                {popular ? 'Get Started' : 'Choose Plan'}
+                {popular ? (lang === 'ru' ? 'Получить сейчас' : 'Get Started') : (lang === 'ru' ? 'Выбрать' : 'Choose Plan')}
             </Link>
         </motion.div>
     );

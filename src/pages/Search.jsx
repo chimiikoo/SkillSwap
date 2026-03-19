@@ -28,6 +28,7 @@ export default function Search() {
     const [skillFilter, setSkillFilter] = useState('');
     const [uniFilter, setUniFilter] = useState('');
     const [tutorOnly, setTutorOnly] = useState(false);
+    const [schoolOnly, setSchoolOnly] = useState(false);
     const [minRating, setMinRating] = useState(0);
     const [sortBy, setSortBy] = useState('match');
     const [showFilters, setShowFilters] = useState(false);
@@ -75,9 +76,10 @@ export default function Search() {
                 u.teachSkills?.some(s => s.toLowerCase().includes(query.toLowerCase()));
             const matchesSkill = !skillFilter || u.teachSkills?.includes(skillFilter);
             const matchesUni = !uniFilter || u.university === uniFilter;
-            const matchesTutor = !tutorOnly || u.userType === 'tutor';
+            const matchesTutor = !tutorOnly || u.userType === 'tutor' || u.userType === 'school';
+            const matchesSchool = !schoolOnly || u.userType === 'school';
             const matchesRating = !minRating || (u.rating || 0) >= minRating;
-            return matchesQuery && matchesSkill && matchesUni && matchesTutor && matchesRating;
+            return matchesQuery && matchesSkill && matchesUni && matchesTutor && matchesSchool && matchesRating;
         })
         .sort((a, b) => {
             if (sortBy === 'match') return (b.matchScore || 0) - (a.matchScore || 0);
@@ -169,15 +171,24 @@ export default function Search() {
                                         <option value="sessions">{t('search.sortExp')}</option>
                                     </select>
                                 </div>
-                                <div className="md:col-span-4 flex items-center gap-3 mt-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
+                                <div className="md:col-span-4 flex flex-wrap items-center gap-6 mt-2 pt-4 border-t border-white/5">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
                                         <input
                                             type="checkbox"
                                             checked={tutorOnly}
                                             onChange={(e) => setTutorOnly(e.target.checked)}
                                             className="w-4 h-4 rounded bg-dark/50 border-white/20 text-neon focus:ring-neon/50 focus:ring-offset-dark"
                                         />
-                                        <span className="text-sm text-white/80">Только сертифицированные репетиторы</span>
+                                        <span className="text-sm text-white/60 group-hover:text-white transition-colors">Показать репетиторов</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={schoolOnly}
+                                            onChange={(e) => setSchoolOnly(e.target.checked)}
+                                            className="w-4 h-4 rounded bg-dark/50 border-white/20 text-neon focus:ring-neon/50 focus:ring-offset-dark"
+                                        />
+                                        <span className="text-sm text-white/60 group-hover:text-white transition-colors">Школы и курсы</span>
                                     </label>
                                 </div>
                             </div>
@@ -273,13 +284,18 @@ function UserCard({ user, onFollow }) {
                             )}
                         </div>
                         <div>
-                            <h3 className="font-medium group-hover:text-neon transition-colors flex items-center gap-1.5">
+                            <h3 className="font-medium group-hover:text-neon transition-colors flex items-center gap-1.5 flex-wrap">
                                 {user.name}
                                 {user.userType === 'tutor' && <VerifiedBadge size={15} />}
+                                {user.userType === 'school' && (
+                                    <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest">
+                                        SCHOOL
+                                    </span>
+                                )}
                             </h3>
                             <p className="text-white/30 text-xs flex items-center gap-1">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                                {user.university}
+                                {user.userType === 'school' ? user.city || 'Кыргызстан' : user.university}
                             </p>
                         </div>
                     </div>
@@ -306,6 +322,15 @@ function UserCard({ user, onFollow }) {
                     ))}
                     <span className="text-white/30 text-xs ml-1 font-mono">{user.rating?.toFixed(1)}</span>
                 </div>
+
+                {/* Price Display */}
+                {user.userType === 'tutor' && user.hourlyRate > 0 && (
+                    <div className="flex items-center gap-1.5 mb-3">
+                        <div className="px-2 py-0.5 rounded-lg bg-neon/10 border border-neon/20 text-neon font-bold text-sm">
+                            {user.hourlyRate} сом/час
+                        </div>
+                    </div>
+                )}
 
                 {/* Skills */}
                 <div className="flex flex-wrap gap-1.5 mb-3">

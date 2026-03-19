@@ -77,7 +77,7 @@ export function AuthProvider({ children }) {
                 setUnreadCount(prevCount => {
                     // Show notification if we got a new message and page is backgrounded
                     if (data.count > prevCount && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-                        new Notification('SkillSwap AI', {
+                        new Notification('SkillSwap', {
                             body: 'У вас новое сообщение!',
                             icon: '/vite.svg'
                         });

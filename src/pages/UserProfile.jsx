@@ -183,114 +183,174 @@ export default function UserProfile() {
                         </button>
                     </div>
 
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                        <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: 'spring', damping: 15, delay: 0.2 }}
-                            className="relative"
-                        >
-                            <div className="w-24 h-24 rounded-3xl overflow-hidden bg-neon/10 border-2 border-neon/20 p-1 flex items-center justify-center text-neon text-4xl font-bold shadow-[0_0_30px_rgba(163,255,18,0.1)]">
-                                {profile.avatarUrl ? (
-                                    <img src={resolveFileUrl(profile.avatarUrl)} alt={profile.name} className="w-full h-full object-cover rounded-2xl" />
-                                ) : (
-                                    profile.name?.charAt(0)
-                                )}
-                            </div>
-                            {profile.userType === 'tutor' && (
-                                <div className="absolute -bottom-1 -right-1">
+                    {profile.userType === 'school' ? (
+                        // INSTAGRAM STYLE SCHOOL PROFILE HEADER
+                        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 pt-4">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', damping: 15, delay: 0.2 }}
+                                className="relative shrink-0"
+                            >
+                                <div className="w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden p-1 bg-gradient-to-tr from-neon via-purple-500 to-pink-500 shadow-[0_0_30px_rgba(163,255,18,0.2)]">
+                                    <div className="w-full h-full rounded-full overflow-hidden bg-dark border-4 border-dark flex items-center justify-center text-neon text-5xl font-bold">
+                                        {profile.avatarUrl ? (
+                                            <img src={resolveFileUrl(profile.avatarUrl)} alt={profile.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            profile.name?.charAt(0)
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="absolute -bottom-2 right-2">
                                     <VerifiedBadge size={28} className="drop-shadow-[0_0_8px_rgba(163,255,18,0.5)]" />
                                 </div>
-                            )}
-                        </motion.div>
+                            </motion.div>
 
-                        <div className="flex-1 mt-2 md:mt-0">
-                            <div className="flex flex-wrap items-center gap-3 mb-1.5">
-                                <h1 className="font-display text-3xl font-bold tracking-tight">
-                                    {profile.name}
-                                </h1>
-                                {profile.matchScore && (
-                                    <span className={`px-3 py-1 rounded-full bg-gradient-to-r ${scoreBg} text-[10px] uppercase font-black tracking-widest border shadow-lg`}>
-                                        {profile.matchScore}% core match
+                            <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left">
+                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-4">
+                                    <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight">
+                                        {profile.name}
+                                    </h1>
+                                    <button onClick={handleMessage} className="neon-btn px-4 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 shadow-[0_0_15px_rgba(163,255,18,0.1)]">
+                                        Написать
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-6 text-sm md:text-base font-medium mb-5">
+                                    <div className="flex flex-col md:flex-row items-center gap-1">
+                                        <span className="text-white font-bold">{profile.courses?.length || 0}</span>
+                                        <span className="text-white/40 font-normal">курсов</span>
+                                    </div>
+                                    <div className="flex flex-col md:flex-row items-center gap-1">
+                                        <span className="text-white font-bold">{profile.followersCount || 0}</span>
+                                        <span className="text-white/40 font-normal">{t('userProfile.followers')}</span>
+                                    </div>
+                                    <div className="flex flex-col md:flex-row items-center gap-1">
+                                        <span className="text-white font-bold">{profile.followingCount || 0}</span>
+                                        <span className="text-white/40 font-normal">{t('userProfile.following')}</span>
+                                    </div>
+                                </div>
+
+                                <div className="max-w-xl">
+                                    <h2 className="text-sm font-bold mb-1 text-white/90">{profile.name} — Образовательная платформа</h2>
+                                    <p className="text-white/60 text-sm leading-relaxed whitespace-pre-wrap">{profile.bio || 'У нас лучшие курсы! Присоединяйтесь.'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        // REGULAR PROFILE HEADER
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', damping: 15, delay: 0.2 }}
+                                className="relative"
+                            >
+                                <div className="w-24 h-24 rounded-3xl overflow-hidden bg-neon/10 border-2 border-neon/20 p-1 flex items-center justify-center text-neon text-4xl font-bold shadow-[0_0_30px_rgba(163,255,18,0.1)]">
+                                    {profile.avatarUrl ? (
+                                        <img src={resolveFileUrl(profile.avatarUrl)} alt={profile.name} className="w-full h-full object-cover rounded-2xl" />
+                                    ) : (
+                                        profile.name?.charAt(0)
+                                    )}
+                                </div>
+                                {profile.userType === 'tutor' && (
+                                    <div className="absolute -bottom-1 -right-1">
+                                        <VerifiedBadge size={28} className="drop-shadow-[0_0_8px_rgba(163,255,18,0.5)]" />
+                                    </div>
+                                )}
+                            </motion.div>
+
+                            <div className="flex-1 mt-2 md:mt-0">
+                                <div className="flex flex-wrap items-center gap-3 mb-1.5">
+                                    <h1 className="font-display text-3xl font-bold tracking-tight">
+                                        {profile.name}
+                                    </h1>
+                                    {profile.matchScore && (
+                                        <span className={`px-3 py-1 rounded-full bg-gradient-to-r ${scoreBg} text-[10px] uppercase font-black tracking-widest border shadow-lg`}>
+                                            {profile.matchScore}% core match
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-y-2 gap-x-4 mb-4">
+                                    <span className="text-white/40 text-sm flex items-center gap-1.5">
+                                        <UniIcon size={14} className="text-neon/60" />
+                                        {profile.university}
                                     </span>
+                                    <span className="text-white/20">•</span>
+                                    <div className="flex items-center gap-4 text-sm font-medium">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-white">{profile.followersCount || 0}</span>
+                                            <span className="text-white/40 text-xs font-normal">{t('userProfile.followers')}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-white">{profile.followingCount || 0}</span>
+                                            <span className="text-white/40 text-xs font-normal">{t('userProfile.following')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {profile.bio && (
+                                    <p className="text-white/50 text-sm leading-relaxed max-w-xl">{profile.bio}</p>
                                 )}
                             </div>
+                        </div>
+                    )}
 
-                            <div className="flex flex-wrap items-center gap-y-2 gap-x-4 mb-4">
-                                <span className="text-white/40 text-sm flex items-center gap-1.5">
-                                    <UniIcon size={14} className="text-neon/60" />
-                                    {profile.university}
-                                </span>
-                                <span className="text-white/20">•</span>
-                                <div className="flex items-center gap-4 text-sm font-medium">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-white">{profile.followersCount || 0}</span>
-                                        <span className="text-white/40 text-xs font-normal">{t('userProfile.followers')}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-white">{profile.followingCount || 0}</span>
-                                        <span className="text-white/40 text-xs font-normal">{t('userProfile.following')}</span>
-                                    </div>
+                    {profile.userType !== 'school' && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/5">
+                            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
+                                <div className="flex items-center gap-2 mb-1 text-white/40">
+                                    <StarIcon size={14} className="text-yellow-500" />
+                                    <span className="text-[10px] uppercase font-bold tracking-wider">{t('userProfile.rating')}</span>
+                                </div>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-bold text-white">{profile.rating?.toFixed(1)}</span>
+                                    <span className="text-[10px] text-white/30">/ 5.0</span>
                                 </div>
                             </div>
 
-                            {profile.bio && (
-                                <p className="text-white/50 text-sm leading-relaxed max-w-xl">{profile.bio}</p>
+                            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
+                                <div className="flex items-center gap-2 mb-1 text-white/40">
+                                    <SparklesIcon size={14} className="text-neon" />
+                                    <span className="text-[10px] uppercase font-bold tracking-wider">{t('dashboard.sessions')}</span>
+                                </div>
+                                <span className="text-xl font-bold text-white">{profile.sessionsCount || 0}</span>
+                            </div>
+
+                            {profile.userType === 'tutor' && (
+                                <>
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
+                                        <div className="flex items-center gap-2 mb-1 text-white/40">
+                                            <TrophyIcon size={14} className="text-blue-400" />
+                                            <span className="text-[10px] uppercase font-bold tracking-wider">{t('register.experienceLabel')}</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-xl font-bold text-white font-mono">{profile.experience}</span>
+                                            <span className="text-[10px] text-white/30 uppercase">{t('register.years')}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
+                                        <div className="flex items-center gap-2 mb-1 text-white/40">
+                                            <MapPinIcon size={14} className="text-red-400" />
+                                            <span className="text-[10px] uppercase font-bold tracking-wider">{t('register.cityLabel')}</span>
+                                        </div>
+                                        <span className="text-sm font-bold text-white truncate">{profile.city}</span>
+                                    </div>
+                                </>
                             )}
                         </div>
-                    </div>
-
-                    {/* Stats & Tutoring Info */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/5">
-                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
-                            <div className="flex items-center gap-2 mb-1 text-white/40">
-                                <StarIcon size={14} className="text-yellow-500" />
-                                <span className="text-[10px] uppercase font-bold tracking-wider">{t('userProfile.rating')}</span>
-                            </div>
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-xl font-bold text-white">{profile.rating?.toFixed(1)}</span>
-                                <span className="text-[10px] text-white/30">/ 5.0</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
-                            <div className="flex items-center gap-2 mb-1 text-white/40">
-                                <SparklesIcon size={14} className="text-neon" />
-                                <span className="text-[10px] uppercase font-bold tracking-wider">{t('dashboard.sessions')}</span>
-                            </div>
-                            <span className="text-xl font-bold text-white">{profile.sessionsCount || 0}</span>
-                        </div>
-
-                        {profile.userType === 'tutor' && (
-                            <>
-                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
-                                    <div className="flex items-center gap-2 mb-1 text-white/40">
-                                        <TrophyIcon size={14} className="text-blue-400" />
-                                        <span className="text-[10px] uppercase font-bold tracking-wider">{t('register.experienceLabel')}</span>
-                                    </div>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-xl font-bold text-white font-mono">{profile.experience}</span>
-                                        <span className="text-[10px] text-white/30 uppercase">{t('register.years')}</span>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
-                                    <div className="flex items-center gap-2 mb-1 text-white/40">
-                                        <MapPinIcon size={14} className="text-red-400" />
-                                        <span className="text-[10px] uppercase font-bold tracking-wider">{t('register.cityLabel')}</span>
-                                    </div>
-                                    <span className="text-sm font-bold text-white truncate">{profile.city}</span>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                    )}
 
                     <div className="flex flex-wrap gap-3 mt-8">
-                        <button onClick={handleMessage} className="neon-btn px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(163,255,18,0.15)] group">
-                            <ChatIcon />
-                            {t('userProfile.sendMessage')}
-                            <span className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">→</span>
-                        </button>
+                        {profile.userType !== 'school' && (
+                            <button onClick={handleMessage} className="neon-btn px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(163,255,18,0.15)] group">
+                                <ChatIcon />
+                                {t('userProfile.sendMessage')}
+                                <span className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">→</span>
+                            </button>
+                        )}
                         <button onClick={() => setShowReview(true)} className="glass-btn px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 border border-white/10 hover:border-white/20 transition-all">
                             <StarIcon size={16} />
                             {t('userProfile.leaveReview')}
@@ -300,6 +360,52 @@ export default function UserProfile() {
                         </button>
                     </div>
                 </motion.div>
+
+                {/* SCHOOL COURSES FEED */}
+                {profile.userType === 'school' && (
+                    <ScrollSection className="mb-8">
+                        {/* Feed Tabs (Instagram Style) */}
+                        <div className="flex items-center justify-center border-t border-white/10 mb-6">
+                            <button className="flex items-center gap-2 px-4 py-4 border-t border-white text-white text-xs font-bold uppercase tracking-widest">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                Курсы
+                            </button>
+                        </div>
+
+                        {(!profile.courses || profile.courses.length === 0) ? (
+                            <div className="text-center py-12 px-4 border border-white/5 rounded-2xl bg-white/[0.02]">
+                                <div className="w-16 h-16 rounded-full border-2 border-white/10 flex items-center justify-center mx-auto mb-4">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/></svg>
+                                </div>
+                                <h3 className="text-xl font-bold mb-2">Пока нет курсов</h3>
+                                <p className="text-white/40 text-sm max-w-sm mx-auto">Эта платформа еще не опубликовала свои курсы.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4">
+                                {profile.courses.map((course, idx) => (
+                                    <motion.div variants={fadeUp} custom={idx} key={idx} className="aspect-[4/5] bg-white/5 border border-white/10 rounded-md md:rounded-xl relative group flex flex-col p-4 md:p-6 overflow-hidden cursor-pointer hover:border-neon/30 transition-all">
+                                        <div className={`absolute inset-0 bg-gradient-to-br from-neon/10 via-dark to-purple-500/10 opacity-80 group-hover:scale-105 transition-transform duration-500`} />
+                                        <div className="relative z-10 flex flex-col h-full">
+                                            <div className="flex-1 flex items-center justify-center">
+                                                <h3 className="font-display font-bold text-center text-lg md:text-2xl leading-tight text-white group-hover:text-neon transition-colors drop-shadow-md">
+                                                    {course.title || 'Курс'}
+                                                </h3>
+                                            </div>
+                                            <div className="flex items-center justify-between mt-auto">
+                                                <span className="px-2.5 py-1 bg-white/10 backdrop-blur-md border border-white/10 text-white text-[10px] md:text-xs font-bold rounded-lg truncate max-w-[70%]">
+                                                    {course.duration || 'Не указано'}
+                                                </span>
+                                                <span className="px-2.5 py-1 bg-neon text-dark text-[10px] md:text-xs font-black rounded-lg shadow-[0_0_10px_rgba(163,255,18,0.3)] shrink-0">
+                                                    {course.price || 'Цена?'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
+                    </ScrollSection>
+                )}
 
                 {/* Match reason */}
                 {profile.matchReason && (
@@ -314,40 +420,42 @@ export default function UserProfile() {
                     </ScrollSection>
                 )}
 
-                {/* Skills */}
-                <ScrollSection className="grid md:grid-cols-2 gap-4 mb-6">
-                    <motion.div variants={fadeUp} className={`glass-card p-5 ${profile.userType === 'tutor' ? 'border-neon/20 bg-neon/[0.02]' : ''}`}>
-                        <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-                            <TeachIcon />
-                            {profile.userType === 'tutor' ? 'Subjects I Teach' : t('userProfile.canTeach')}
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                            {(profile.teachSkills || []).map(s => (
-                                <span key={s} className={`flex items-center gap-2 py-2 px-3 rounded-xl transition-all ${profile.userType === 'tutor'
-                                    ? 'bg-neon/10 text-neon border border-neon/20 text-sm font-bold hover:bg-neon/20 cursor-default'
-                                    : 'badge-neon text-xs'
-                                    }`}>
-                                    <SkillIcon skill={s} size={profile.userType === 'tutor' ? 18 : 14} />
-                                    {s}
-                                </span>
-                            ))}
-                        </div>
-                    </motion.div>
-                    <motion.div variants={fadeUp} className="glass-card p-5">
-                        <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-                            <LearnIcon />
-                            {t('userProfile.wantLearn')}
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                            {(profile.learnSkills || []).map(s => (
-                                <span key={s} className="px-2.5 py-1 rounded-lg text-xs bg-white/5 text-white/50 border border-white/8 flex items-center gap-1.5">
-                                    <SkillIcon skill={s} size={14} />
-                                    {s}
-                                </span>
-                            ))}
-                        </div>
-                    </motion.div>
-                </ScrollSection>
+                {/* Skills - Only show for Non-Schools */}
+                {profile.userType !== 'school' && (
+                    <ScrollSection className="grid md:grid-cols-2 gap-4 mb-6">
+                        <motion.div variants={fadeUp} className={`glass-card p-5 ${profile.userType === 'tutor' ? 'border-neon/20 bg-neon/[0.02]' : ''}`}>
+                            <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
+                                <TeachIcon />
+                                {profile.userType === 'tutor' ? 'Subjects I Teach' : t('userProfile.canTeach')}
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {(profile.teachSkills || []).map(s => (
+                                    <span key={s} className={`flex items-center gap-2 py-2 px-3 rounded-xl transition-all ${profile.userType === 'tutor'
+                                        ? 'bg-neon/10 text-neon border border-neon/20 text-sm font-bold hover:bg-neon/20 cursor-default'
+                                        : 'badge-neon text-xs'
+                                        }`}>
+                                        <SkillIcon skill={s} size={profile.userType === 'tutor' ? 18 : 14} />
+                                        {s}
+                                    </span>
+                                ))}
+                            </div>
+                        </motion.div>
+                        <motion.div variants={fadeUp} className="glass-card p-5">
+                            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                                <LearnIcon />
+                                {t('userProfile.wantLearn')}
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {(profile.learnSkills || []).map(s => (
+                                    <span key={s} className="px-2.5 py-1 rounded-lg text-xs bg-white/5 text-white/50 border border-white/8 flex items-center gap-1.5">
+                                        <SkillIcon skill={s} size={14} />
+                                        {s}
+                                    </span>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </ScrollSection>
+                )}
 
                 {/* Reviews */}
                 <ScrollSection>

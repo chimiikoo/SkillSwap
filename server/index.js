@@ -25,8 +25,8 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'skillswap_secret_key_2026';
-const DB_PATH = join(__dirname, 'skillswap.db');
+const JWT_SECRET = process.env.JWT_SECRET || 'swapio_secret_key_2026';
+const DB_PATH = join(__dirname, 'swapio.db');
 
 // Middleware
 app.use(cors({
@@ -94,6 +94,16 @@ async function initDB() {
     try {
         db.run('ALTER TABLE users ADD COLUMN isPremium INTEGER DEFAULT 0');
     } catch (e) { }
+    // Hourly Rate column
+    try {
+        db.run('ALTER TABLE users ADD COLUMN hourlyRate INTEGER DEFAULT 0');
+    } catch (e) { }
+    // Balance column
+    try {
+        db.run('ALTER TABLE users ADD COLUMN balance INTEGER DEFAULT 0');
+    } catch (e) { }
+
+    const PLATFORM_FEE_PERCENT = 15;
 
     db.run(`
     CREATE TABLE IF NOT EXISTS sessions (
@@ -358,6 +368,8 @@ function parseUser(row) {
         city: row.city || '',
         teachingFormat: row.teachingFormat || '',
         isPremium: !!row.isPremium,
+        hourlyRate: row.hourlyRate || 0,
+        balance: row.balance || 0,
     };
 }
 
@@ -441,12 +453,12 @@ async function sendVerificationEmail(email, code) {
         console.log('   ✅ SMTP connection verified!');
 
         const info = await transport.sendMail({
-            from: `"SkillSwap AI" <${process.env.EMAIL_USER}>`,
+            from: '"Swapio" <${process.env.EMAIL_USER}>',
             to: email,
-            subject: 'Код подтверждения регистрации — SkillSwap AI',
+            subject: 'Код подтверждения регистрации — Swapio',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                    <h2 style="color: #333; text-align: center;">Добро пожаловать в SkillSwap AI!</h2>
+                    <h2 style="color: #333; text-align: center;">Добро пожаловать в Swapio!</h2>
                     <p style="text-align: center; color: #555;">Для завершения регистрации введите этот код:</p>
                     <div style="background: #A3FF12; color: #000; padding: 15px; font-size: 32px; font-weight: bold; text-align: center; letter-spacing: 10px; border-radius: 8px; margin: 25px 0; font-family: monospace;">
                         ${code}
@@ -481,7 +493,7 @@ async function sendVerificationEmail(email, code) {
 
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat } = req.body;
+        const { email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat, hourlyRate } = req.body;
 
         if (!email || !password || !name) {
             return res.status(400).json({ error: 'Email, пароль и имя обязательны' });
@@ -493,15 +505,15 @@ app.post('/api/auth/register', async (req, res) => {
         const id = uuidv4();
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
-        const role = (userType === 'tutor') ? 'tutor' : 'student';
+        const role = (userType === 'tutor' || userType === 'school') ? userType : 'student';
 
         db.run(`
-      INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, isVerified, verificationCode, userType, experience, city, teachingFormat)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, isVerified, verificationCode, userType, experience, city, teachingFormat, hourlyRate)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [id, email, hashedPassword, name, university || '', bio || '',
             JSON.stringify(teachSkills || []), JSON.stringify(learnSkills || []),
             0, verificationCode,
-            userType || 'student', experience || 0, city || '', teachingFormat || '']); // isVerified = 0
+            userType || 'student', experience || 0, city || '', teachingFormat || '', hourlyRate || 0]); // isVerified = 0
 
         saveDB();
 
@@ -692,7 +704,7 @@ app.put('/api/users/profile', auth, (req, res) => {
         const existing = queryOne('SELECT * FROM users WHERE id = ?', [req.userId]);
         if (!existing) return res.status(404).json({ error: 'User not found' });
 
-        const { name, university, bio, teachSkills, learnSkills, avatarUrl } = req.body;
+        const { name, university, bio, teachSkills, learnSkills, avatarUrl, hourlyRate } = req.body;
 
         db.run(`
             UPDATE users SET 
@@ -701,7 +713,8 @@ app.put('/api/users/profile', auth, (req, res) => {
                 bio = ?, 
                 teachSkills = ?, 
                 learnSkills = ?, 
-                avatarUrl = ?
+                avatarUrl = ?,
+                hourlyRate = ?
             WHERE id = ?
         `, [
             name !== undefined ? name : existing.name,
@@ -710,6 +723,7 @@ app.put('/api/users/profile', auth, (req, res) => {
             teachSkills !== undefined ? JSON.stringify(teachSkills) : existing.teachSkills,
             learnSkills !== undefined ? JSON.stringify(learnSkills) : existing.learnSkills,
             avatarUrl !== undefined ? avatarUrl : existing.avatarUrl,
+            hourlyRate !== undefined ? hourlyRate : existing.hourlyRate,
             req.userId
         ]);
 
@@ -1060,8 +1074,25 @@ app.post('/api/sessions/:id/confirm', auth, (req, res) => {
     const updated = queryOne('SELECT * FROM sessions WHERE id = ?', [req.params.id]);
     if (updated.requesterConfirmed && updated.providerConfirmed) {
         db.run("UPDATE sessions SET status = 'completed' WHERE id = ?", [req.params.id]);
-        db.run('UPDATE users SET skillCoins = skillCoins + 1, sessionsCount = sessionsCount + 1 WHERE id = ?', [updated.requesterId]);
-        db.run('UPDATE users SET skillCoins = skillCoins + 1, sessionsCount = sessionsCount + 1 WHERE id = ?', [updated.providerId]);
+        
+        const requester = queryOne('SELECT * FROM users WHERE id = ?', [updated.requesterId]);
+        const provider = queryOne('SELECT * FROM users WHERE id = ?', [updated.providerId]);
+        
+        // If it's a tutor session with a price
+        if (provider.userType === 'tutor' && provider.hourlyRate > 0) {
+            const amount = provider.hourlyRate;
+            const fee = Math.floor(amount * (PLATFORM_FEE_PERCENT / 100));
+            const tutorEarned = amount - fee;
+            
+            // Deduct from student, add to tutor
+            db.run('UPDATE users SET balance = balance - ? WHERE id = ?', [amount, updated.requesterId]);
+            db.run('UPDATE users SET balance = balance + ? WHERE id = ?', [tutorEarned, updated.providerId]);
+            
+            console.log(`Financial Transfer: Student ${updated.requesterId} paid ${amount}. Platform fee: ${fee}. Tutor ${updated.providerId} earned ${tutorEarned}.`);
+        }
+
+        db.run('UPDATE users SET sessionsCount = sessionsCount + 1 WHERE id = ?', [updated.requesterId]);
+        db.run('UPDATE users SET sessionsCount = sessionsCount + 1 WHERE id = ?', [updated.providerId]);
     }
 
     saveDB();
@@ -1757,7 +1788,7 @@ app.use((err, req, res, next) => {
 async function start() {
     await initDB();
     app.listen(PORT, '0.0.0.0', () => {
-        console.log(`\n🚀 SkillSwap AI Server running on:`);
+        console.log(`\n🚀 Swapio Server running on:`);
         console.log(`   - Local:   http://localhost:${PORT}`);
         console.log(`   - Network: http://0.0.0.0:${PORT} (use your IP)`);
         console.log(`👥 Demo users: aidana@mail.kg, bekzat@mail.kg, etc. / demo123\n`);

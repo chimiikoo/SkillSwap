@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import Navbar from './components/Navbar';
@@ -14,7 +14,9 @@ import AdminPanel from './pages/AdminPanel';
 import Chat from './pages/Chat';
 import Communities from './pages/Communities';
 import CommunityDetail from './pages/CommunityDetail';
+import Footer from './components/Footer';
 import SubscriptionModal from './components/SubscriptionModal';
+import TopUpModal from './components/TopUpModal';
 import Rankings from './pages/Rankings';
 
 function ProtectedRoute({ children, adminOnly = false }) {
@@ -35,7 +37,9 @@ function ProtectedRoute({ children, adminOnly = false }) {
 
 function AppRoutes() {
     const { isAuthenticated } = useAuth();
+    const location = useLocation();
     const [isSubModalOpen, setIsSubModalOpen] = React.useState(false);
+    const [isTopUpOpen, setIsTopUpOpen] = React.useState(false);
 
     React.useEffect(() => {
         if (isAuthenticated) {
@@ -45,40 +49,50 @@ function AppRoutes() {
                 setTimeout(() => {
                     setIsSubModalOpen(true);
                     localStorage.setItem('hasSeenSubscriptionFirstLogin', 'true');
-                }, 1500); // Small delay for better UX
+                }, 1500); 
             }
 
             // 2. 2-minute timer trigger
             const timer = setTimeout(() => {
                 setIsSubModalOpen(true);
-            }, 120000); // 120000 ms = 2 minutes
+            }, 120000); 
 
             return () => clearTimeout(timer);
         }
     }, [isAuthenticated]);
 
-    // Function to trigger modal from other components (via event or prop drilling)
-    const triggerSubscription = () => setIsSubModalOpen(true);
+    const handleProfileClickTrigger = () => {
+        const clicks = parseInt(sessionStorage.getItem('profileClicks') || '0') + 1;
+        sessionStorage.setItem('profileClicks', clicks.toString());
+        
+        if (clicks % 3 === 0) {
+            setIsTopUpOpen(true);
+        }
+    };
 
     return (
-        <div id="app-root">
-            <Navbar onProfileClick={triggerSubscription} />
-            <Routes>
-                <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Landing />} />
-                <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-                <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/user/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPanel /></ProtectedRoute>} />
-                <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-                <Route path="/communities" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
-                <Route path="/community/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
-                <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
-                <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
+        <div id="app-root" className="flex flex-col min-h-screen">
+            <Navbar onProfileClick={handleProfileClickTrigger} onUpgradeClick={() => setIsSubModalOpen(true)} />
+            <div className="flex-grow">
+                <Routes>
+                    <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Landing />} />
+                    <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
+                    <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
+                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                    <Route path="/user/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+                    <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPanel /></ProtectedRoute>} />
+                    <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                    <Route path="/communities" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
+                    <Route path="/community/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
+                    <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
+                    <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+            </div>
+            {location.pathname !== '/chat' && <Footer />}
             <SubscriptionModal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} />
+            <TopUpModal isOpen={isTopUpOpen} onClose={() => setIsTopUpOpen(false)} />
         </div>
     );
 }
