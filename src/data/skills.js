@@ -20,31 +20,12 @@ export const SKILL_CATEGORIES = [
         ]
     },
     {
-        name: 'Data & AI',
-        icon: 'brain',
-        skills: [
-            'Machine Learning', 'Data Science', 'Data Analysis',
-            'Deep Learning', 'Computer Vision', 'NLP',
-            'TensorFlow', 'PyTorch', 'Power BI', 'Tableau',
-        ]
-    },
-    {
         name: 'Языки',
         icon: 'globe',
         skills: [
             'English', 'Немецкий', 'Испанский', 'Корейский',
             'Китайский', 'Итальянский', 'Французский', 'Японский',
             'Турецкий', 'Арабский', 'Кыргызский', 'Русский',
-        ]
-    },
-    {
-        name: 'Бизнес & Маркетинг',
-        icon: 'briefcase',
-        skills: [
-            'Маркетинг', 'SEO', 'SMM', 'Copywriting', 'Email-маркетинг',
-            'Google Ads', 'Таргетированная реклама', 'Контент-маркетинг',
-            'Финансы', 'Бухгалтерия', 'Project Management', 'Agile/Scrum',
-            'Бизнес-аналитика', 'Стартапы',
         ]
     },
     {
@@ -63,14 +44,6 @@ export const SKILL_CATEGORIES = [
             'Public Speaking', 'Лидерство', 'Тайм-менеджмент',
             'Коммуникация', 'Критическое мышление', 'Переговоры',
             'Эмоциональный интеллект',
-        ]
-    },
-    {
-        name: 'Музыка & Творчество',
-        icon: 'music',
-        skills: [
-            'Гитара', 'Фортепиано', 'Вокал', 'Битмейкинг',
-            'Фотография', 'Видеосъёмка', 'Монтаж видео',
         ]
     },
 ];
