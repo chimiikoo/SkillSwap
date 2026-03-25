@@ -51,14 +51,14 @@ export default function SubscriptionModal({ isOpen, onClose }) {
     let planNameEn = 'Student';
 
     if (userType === 'tutor') {
-        monthlyPrice = '399';
-        yearlyPrice = '3990';
+        monthlyPrice = '499';
+        yearlyPrice = '4990';
         activeFeatures = baseFeaturesTutor;
         planNameRu = 'Репетитор';
         planNameEn = 'Tutor';
     } else if (userType === 'school') {
-        monthlyPrice = '990';
-        yearlyPrice = '9990';
+        monthlyPrice = '2990';
+        yearlyPrice = '29900';
         activeFeatures = baseFeaturesSchool;
         planNameRu = 'Школа / Курс';
         planNameEn = 'School / Course';

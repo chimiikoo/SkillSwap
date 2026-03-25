@@ -1,0 +1,29 @@
+[33mcommit f2983bc1f120f701665734c123eff337c7983203[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: chimiikoo <136308153+chimiikoo@users.noreply.github.com>
+Date:   Fri Mar 20 01:37:53 2026 +0600
+
+    New updates
+
+[33mcommit b99b5c399e23654e9556460f48cd66730b202732[m
+Author: chimiikoo <136308153+chimiikoo@users.noreply.github.com>
+Date:   Sat Feb 28 01:51:46 2026 +0600
+
+    feat(ui): Replaced crown emoji with a premium animated CrownIcon on Rankings page
+
+[33mcommit a4e5b06b29e0c0479f32f8aa5d99c9e804817eae[m
+Author: chimiikoo <136308153+chimiikoo@users.noreply.github.com>
+Date:   Sat Feb 28 00:50:43 2026 +0600
+
+    feat(ui): Added password visibility toggle to Login and Register pages
+
+[33mcommit 7cb78c965493639ba755eecd61d02f7e05acb42a[m
+Author: chimiikoo <136308153+chimiikoo@users.noreply.github.com>
+Date:   Sat Feb 28 00:26:36 2026 +0600
+
+    fix(rendering): Fixed black screen by adding missing useEffect import in Navbar.jsx and simplified light mode CSS
+
+[33mcommit eaf6e608555cf45d2915e83342451d806028fc70[m
+Author: chimiikoo <136308153+chimiikoo@users.noreply.github.com>
+Date:   Sat Feb 28 00:14:16 2026 +0600
+
+    feat(ui&features): Implemented Dark/Light mode, push notifications, advanced search filters, and new Rankings/Subscription pages.

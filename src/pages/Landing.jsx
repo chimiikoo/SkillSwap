@@ -1,567 +1,126 @@
-import React, { useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, useInView, useScroll, useTransform } from 'framer-motion';
-import { useLanguage } from '../context/LanguageContext';
-import {
-    PythonIcon, ReactIcon, FigmaIcon, JavaScriptIcon, DockerIcon,
-    BrainIcon, ShieldCheckIcon, StarIcon, AlertTriangleIcon,
-    SearchIcon, CoinIcon, SparklesIcon, RocketIcon, GlobeIcon,
-    EnglishIcon, KoreanIcon, ChineseIcon, GermanIcon,
-} from '../components/Icons';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const fadeUp = {
-    hidden: { opacity: 0, y: 40 },
-    visible: (i = 0) => ({
-        opacity: 1,
-        y: 0,
-        transition: { delay: i * 0.12, duration: 0.7, ease: [0.22, 1, 0.36, 1] }
-    })
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
 };
-
-const scaleIn = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: (i = 0) => ({
-        opacity: 1,
-        scale: 1,
-        transition: { delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }
-    })
-};
-
-const stagger = {
-    visible: { transition: { staggerChildren: 0.12 } }
-};
-
-function AnimatedSection({ children, className = '' }) {
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, margin: '-80px' });
-    return (
-        <motion.div
-            ref={ref}
-            initial="hidden"
-            animate={isInView ? 'visible' : 'hidden'}
-            variants={stagger}
-            className={className}
-        >
-            {children}
-        </motion.div>
-    );
-}
 
 export default function Landing() {
-    const { t, lang } = useLanguage();
-    const heroRef = useRef(null);
-    const { scrollYProgress } = useScroll({
-        target: heroRef,
-        offset: ['start start', 'end start']
-    });
-    const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
-    const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.95]);
-    const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
+    const navigate = useNavigate();
 
-    // Translate skill name helper — programming languages and tech stay the same
-    const ts = (skill) => {
-        // Check if it's in skillNames translations
-        const translated = t(`skillNames.${skill}`);
-        // If the key path didn't resolve, return original
-        return translated === `skillNames.${skill}` ? skill : translated;
+    const handleStart = () => {
+        navigate('/register');
     };
 
     return (
-        <div className="min-h-screen bg-dark overflow-hidden">
-            {/* Hero Section */}
-            <section ref={heroRef} className="relative min-h-screen flex items-center justify-center bg-grid">
-                {/* Background glows */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-radial from-neon/8 via-neon/2 to-transparent blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-radial from-neon/5 to-transparent blur-3xl pointer-events-none" />
-                <div className="absolute top-1/3 left-0 w-[300px] h-[300px] bg-gradient-radial from-purple-500/5 to-transparent blur-3xl pointer-events-none" />
+        <div className="min-h-screen bg-[#0F0F11] text-white font-sans selection:bg-[#A3FF12] selection:text-black overflow-x-hidden">
+            
+            {/* BACKGROUND GLOWS */}
+            <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-[#A3FF12]/10 blur-[120px] rounded-full pointer-events-none" />
+            <div className="fixed bottom-[-20%] right-[-10%] w-[400px] h-[400px] bg-[#A3FF12]/5 blur-[100px] rounded-full pointer-events-none" />
 
-                {/* Floating particles */}
-                <div className="absolute inset-0 pointer-events-none">
-                    {[...Array(12)].map((_, i) => (
-                        <motion.div
-                            key={i}
-                            className={`absolute rounded-full ${i % 3 === 0 ? 'w-1.5 h-1.5 bg-neon/40' : 'w-1 h-1 bg-neon/20'}`}
-                            style={{
-                                left: `${8 + i * 7.5}%`,
-                                top: `${15 + (i % 4) * 20}%`,
-                            }}
-                            animate={{
-                                y: [0, -40 - i * 5, 0],
-                                x: [0, (i % 2 === 0 ? 10 : -10), 0],
-                                opacity: [0.1, 0.7, 0.1],
-                                scale: [0.8, 1.2, 0.8],
-                            }}
-                            transition={{
-                                duration: 4 + i * 0.4,
-                                repeat: Infinity,
-                                delay: i * 0.25,
-                                ease: 'easeInOut',
-                            }}
-                        />
-                    ))}
-                </div>
-
-                <motion.div
-                    style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
-                    className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 pt-20"
-                >
-                    <motion.div
-                        initial="hidden"
-                        animate="visible"
-                        variants={stagger}
-                        className="space-y-8"
+            {/* 1. HERO SECTION */}
+            <section className="relative pt-32 pb-16 md:pt-40 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center z-10">
+                <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+                        Подберем тебе лучший способ обучения за 5 минут — <span className="text-[#A3FF12]">бесплатно</span>
+                    </h1>
+                    <p className="text-lg sm:text-xl text-white/50 mb-10 max-w-2xl mx-auto leading-relaxed">
+                        Найди наставника или курс по английскому, дизайну или программированию без долгих поисков.
+                    </p>
+                    
+                    <button 
+                        onClick={handleStart}
+                        className="w-full sm:w-auto bg-[#A3FF12] text-black text-lg font-bold py-5 px-10 rounded-2xl hover:bg-[#b0ff2e] transform hover:scale-[1.02] transition-all active:scale-95 shadow-[0_0_30px_rgba(163,255,18,0.3)]"
                     >
-                        {/* Badge */}
-                        <motion.div variants={fadeUp} custom={0}>
-                            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-neon/5 border border-neon/20 text-neon text-sm font-medium backdrop-blur-sm">
-                                <SparklesIcon size={16} />
-                                {t('landing.badge')}
-                            </span>
-                        </motion.div>
+                        Начать подбор
+                    </button>
+                    
+                    <div className="mt-5 text-sm text-white/40 flex flex-wrap items-center justify-center gap-2">
+                        <span>Бесплатно</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-white/20"></span>
+                        <span>Без обязательств</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-white/20"></span>
+                        <span>Ответ в течение 10 минут</span>
+                    </div>
+                </motion.div>
+            </section>
 
-                        {/* Title */}
-                        <motion.h1
-                            variants={fadeUp}
-                            custom={1}
-                            className="font-display text-5xl md:text-7xl lg:text-8xl font-bold leading-[0.9] tracking-tight"
-                        >
-                            <span className="block">{t('landing.titleLine1')}</span>
-                            <span className="block neon-text mt-2">{t('landing.titleLine2')}</span>
-                            <span className="block text-white/30 mt-2">{t('landing.titleLine3')}</span>
-                        </motion.h1>
-
-                        {/* Subtitle */}
-                        <motion.p
-                            variants={fadeUp}
-                            custom={2}
-                            className="text-lg md:text-xl text-white/45 max-w-2xl mx-auto leading-relaxed"
-                        >
-                            {t('landing.subtitle')}
-                        </motion.p>
-
-                        {/* CTA Buttons */}
-                        <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                            <Link to="/register" className="neon-btn text-lg px-8 py-4 rounded-2xl flex items-center gap-2 group">
-                                <RocketIcon size={20} />
-                                <span>{t('landing.ctaStart')}</span>
-                                <motion.span
-                                    className="inline-block"
-                                    animate={{ x: [0, 4, 0] }}
-                                    transition={{ duration: 1.5, repeat: Infinity }}
-                                >
-                                    →
-                                </motion.span>
-                            </Link>
-                            <a href="#how-it-works" className="neon-btn-outline text-lg px-8 py-4 rounded-2xl flex items-center gap-2">
-                                {t('landing.ctaHow')}
-                            </a>
-                        </motion.div>
-
-                        {/* Stats */}
-                        <motion.div variants={fadeUp} custom={4} className="flex items-center justify-center gap-8 md:gap-16 pt-8">
-                            <StatsItem value="500+" label={t('landing.students')} />
-                            <div className="w-px h-12 bg-white/10"></div>
-                            <StatsItem value="1200+" label={t('landing.sessions')} />
-                            <div className="w-px h-12 bg-white/10"></div>
-                            <StatsItem value="95%" label={t('landing.matchRate')} />
-                        </motion.div>
-                    </motion.div>
-
-                    {/* Hero visual - floating skill cards */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 80 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.9, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                        className="mt-20 relative"
-                    >
-                        <div className="flex justify-center gap-4 flex-wrap">
-                            <SkillCard name="Python" icon={<PythonIcon size={24} />} color="from-blue-500/20 to-cyan-500/10" />
-                            <SkillCard name="UI/UX" icon={<FigmaIcon size={24} />} color="from-purple-500/20 to-pink-500/10" delay={0.1} />
-                            <SkillCard name="React" icon={<ReactIcon size={24} />} color="from-cyan-500/20 to-blue-500/10" delay={0.2} />
-                            <SkillCard name={ts('Корейский')} icon={<KoreanIcon size={24} />} color="from-red-500/20 to-blue-500/10" delay={0.3} />
-                            <SkillCard name="ML/AI" icon={<BrainIcon size={24} />} color="from-green-500/20 to-emerald-500/10" delay={0.4} />
-                            <SkillCard name="English" icon={<EnglishIcon size={24} />} color="from-blue-600/20 to-red-500/10" delay={0.5} />
+            {/* 2. HOW IT WORKS */}
+            <section className="py-20 px-4 relative z-10">
+                <div className="max-w-4xl mx-auto text-center">
+                    <h2 className="text-3xl font-bold mb-12">Как это работает?</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 flex flex-col items-center">
+                            <div className="w-12 h-12 rounded-full bg-[#A3FF12]/10 text-[#A3FF12] flex items-center justify-center text-xl font-bold mb-6">1</div>
+                            <h3 className="text-xl font-bold mb-3">Регистрация</h3>
+                            <p className="text-white/50 text-sm">Создай аккаунт и укажи свои цели обучения.</p>
                         </div>
-                    </motion.div>
-                </motion.div>
-
-                {/* Scroll indicator */}
-                <motion.div
-                    className="absolute bottom-8 left-1/2 -translate-x-1/2"
-                    animate={{ y: [0, 12, 0] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                    <div className="w-6 h-10 rounded-full border-2 border-white/15 flex items-start justify-center pt-2">
-                        <motion.div
-                            className="w-1 h-2.5 rounded-full bg-neon/50"
-                            animate={{ opacity: [0.3, 1, 0.3], scaleY: [0.8, 1.2, 0.8] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                        />
-                    </div>
-                </motion.div>
-            </section>
-
-            {/* How it Works */}
-            <section id="how-it-works" className="py-28 relative">
-                <div className="absolute inset-0 bg-glow-center pointer-events-none" />
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <AnimatedSection className="text-center mb-16">
-                        <motion.span variants={fadeUp} className="badge-neon mb-4 inline-flex items-center gap-1.5">
-                            <SparklesIcon size={14} />
-                            {t('landing.processLabel')}
-                        </motion.span>
-                        <motion.h2 variants={fadeUp} className="section-title">
-                            {t('landing.howTitle')} <span className="neon-text">{t('landing.howTitleHL')}</span>?
-                        </motion.h2>
-                        <motion.p variants={fadeUp} className="text-white/35 mt-4 max-w-xl mx-auto">
-                            {t('landing.howSubtitle')}
-                        </motion.p>
-                    </AnimatedSection>
-
-                    <AnimatedSection className="grid md:grid-cols-4 gap-6">
-                        <StepCard step="01" title={t('landing.step1Title')} desc={t('landing.step1Desc')} icon={<UsersStepIcon />} />
-                        <StepCard step="02" title={t('landing.step2Title')} desc={t('landing.step2Desc')} icon={<BrainIcon size={28} />} />
-                        <StepCard step="03" title={t('landing.step3Title')} desc={t('landing.step3Desc')} icon={<CalendarStepIcon />} />
-                        <StepCard step="04" title={t('landing.step4Title')} desc={t('landing.step4Desc')} icon={<StarIcon size={28} />} />
-                    </AnimatedSection>
-
-                    {/* Connection line */}
-                    <div className="hidden md:block relative -mt-[140px] mb-[80px] mx-12">
-                        <motion.div
-                            initial={{ scaleX: 0 }}
-                            whileInView={{ scaleX: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 1.2, ease: 'easeOut' }}
-                            className="h-px bg-gradient-to-r from-transparent via-neon/20 to-transparent origin-left"
-                        />
-                    </div>
-                </div>
-            </section>
-
-            {/* Skills Showcase */}
-            <section className="py-16 relative overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <AnimatedSection className="text-center mb-12">
-                        <motion.span variants={fadeUp} className="badge-neon mb-4 inline-flex items-center gap-1.5">
-                            <GlobeIcon size={14} />
-                            {t('landing.skillsLabel')}
-                        </motion.span>
-                        <motion.h2 variants={fadeUp} className="section-title">
-                            {t('landing.skillsTitle')} <span className="neon-text">{t('landing.skillsTitleHL')}</span>
-                        </motion.h2>
-                    </AnimatedSection>
-
-                    {/* Scrolling skills marquee */}
-                    <div className="relative">
-                        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-dark to-transparent z-10 pointer-events-none" />
-                        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-dark to-transparent z-10 pointer-events-none" />
-                        <motion.div
-                            className="flex gap-3 mb-3"
-                            animate={{ x: [0, -1000] }}
-                            transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-                        >
-                            {['Python', 'React', 'Figma', ts('Корейский'), 'ML/AI', 'English', 'Docker', ts('Немецкий'), 'Java', 'Photoshop', ts('Китайский'), 'TypeScript', 'SEO', ts('Испанский'),
-                                'Python', 'React', 'Figma', ts('Корейский'), 'ML/AI', 'English', 'Docker', ts('Немецкий'), 'Java', 'Photoshop', ts('Китайский'), 'TypeScript', 'SEO', ts('Испанский')
-                            ].map((skill, i) => (
-                                <MarqueeSkillTag key={i} skill={skill} />
-                            ))}
-                        </motion.div>
-                        <motion.div
-                            className="flex gap-3"
-                            animate={{ x: [-1000, 0] }}
-                            transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
-                        >
-                            {['UI/UX Design', ts('Итальянский'), 'Node.js', ts('Математика'), 'Git', ts('Французский'), 'C++', 'Public Speaking', ts('Маркетинг'), ts('Японский'), 'Data Science', ts('Гитара'),
-                                'UI/UX Design', ts('Итальянский'), 'Node.js', ts('Математика'), 'Git', ts('Французский'), 'C++', 'Public Speaking', ts('Маркетинг'), ts('Японский'), 'Data Science', ts('Гитара')
-                            ].map((skill, i) => (
-                                <MarqueeSkillTag key={i} skill={skill} />
-                            ))}
-                        </motion.div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Features */}
-            <section className="py-16 md:py-28 relative">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <AnimatedSection className="text-center mb-16">
-                        <motion.span variants={fadeUp} className="badge-neon mb-4 inline-flex items-center gap-1.5">
-                            <RocketIcon size={14} />
-                            {t('landing.featuresLabel')}
-                        </motion.span>
-                        <motion.h2 variants={fadeUp} className="section-title">
-                            {t('landing.featuresTitle')} <span className="neon-text">{t('landing.featuresTitleHL')}</span>?
-                        </motion.h2>
-                    </AnimatedSection>
-
-                    <AnimatedSection className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        <FeatureCard title={t('landing.feature1Title')} desc={t('landing.feature1Desc')} icon={<BrainIcon size={24} />} />
-                        <FeatureCard title={t('landing.feature2Title')} desc={t('landing.feature2Desc')} icon={<ShieldCheckIcon size={24} />} />
-                        <FeatureCard title={t('landing.feature3Title')} desc={t('landing.feature3Desc')} icon={<StarIcon size={24} />} />
-                        <FeatureCard title={t('landing.feature4Title')} desc={t('landing.feature4Desc')} icon={<AlertTriangleIcon size={24} />} />
-                        <FeatureCard title={t('landing.feature5Title')} desc={t('landing.feature5Desc')} icon={<SearchIcon size={24} />} />
-                        <FeatureCard title={t('landing.feature6Title')} desc={t('landing.feature6Desc')} icon={<CoinIcon size={24} />} />
-                    </AnimatedSection>
-                </div>
-            </section>
-
-            {/* Pricing Section */}
-            <section className="py-16 md:py-28 relative bg-white/[0.01]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <AnimatedSection className="text-center mb-16">
-                        <motion.span variants={fadeUp} className="badge-neon mb-4 inline-flex items-center gap-1.5">
-                            <CoinIcon size={14} />
-                            Premium
-                        </motion.span>
-                        <motion.h2 variants={fadeUp} className="section-title">
-                            {t('landing.pricingTitle')} <span className="neon-text">{t('landing.pricingTitleHL')}</span>
-                        </motion.h2>
-                        <motion.p variants={fadeUp} className="text-white/35 mt-4 max-w-xl mx-auto">
-                            {lang === 'ru' ? '1 месяц БЕСПЛАТНО пробная версия для всех тарифов. Затем списывается ежемесячная плата. Отмените в любой момент, чтобы вернуться на ограниченную версию.' : '1 month FREE trial for all plans. Then billed monthly. Cancel anytime to return to the limited version.'}
-                        </motion.p>
-                    </AnimatedSection>
-
-                    <AnimatedSection className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-6 max-w-6xl mx-auto">
-                        <PricingCard
-                            title={lang === 'ru' ? 'Студент' : 'Student'}
-                            price="199"
-                            period={lang === 'ru' ? 'месяц' : 'month'}
-                            discountLabel={lang === 'ru' ? 'Первый месяц бесплатно' : 'First month free'}
-                            features={[
-                                lang === 'ru' ? 'Отправка сообщений' : 'Send messages',
-                                lang === 'ru' ? 'ИИ-подбор репетиторов' : 'AI tutor matching',
-                                lang === 'ru' ? 'Приоритетная поддержка' : 'Priority support',
-                                lang === 'ru' ? 'Специальный набор стикеров' : 'Special sticker pack',
-                                lang === 'ru' ? 'Без рекламы' : 'Ad-free experience',
-                            ]}
-                            lang={lang}
-                        />
-                        <PricingCard
-                            title={lang === 'ru' ? 'Репетитор' : 'Tutor'}
-                            price="399"
-                            period={lang === 'ru' ? 'месяц' : 'month'}
-                            popular
-                            discountLabel={lang === 'ru' ? 'Первый месяц бесплатно' : 'First month free'}
-                            features={[
-                                lang === 'ru' ? 'Приоритет в поиске учеников' : 'Priority student search',
-                                lang === 'ru' ? 'Неограниченное число сессий' : 'Unlimited sessions',
-                                lang === 'ru' ? 'AI рекомендации для роста' : 'AI growth recommendations',
-                                lang === 'ru' ? 'Значок Verified' : 'Verified badge',
-                                lang === 'ru' ? 'Отправка сообщений' : 'Send messages',
-                            ]}
-                            lang={lang}
-                        />
-                        <PricingCard
-                            title={lang === 'ru' ? 'Курсы / Школа' : 'School'}
-                            price="990"
-                            period={lang === 'ru' ? 'месяц' : 'month'}
-                            discountLabel={lang === 'ru' ? 'Первый месяц бесплатно' : 'First month free'}
-                            features={[
-                                lang === 'ru' ? 'Безлимитное размещение курсов' : 'Unlimited course listings',
-                                lang === 'ru' ? 'Первые строчки в поиске' : 'Top search rankings',
-                                lang === 'ru' ? 'Студенты от нейросети' : 'AI student matching',
-                                lang === 'ru' ? 'Брендированная страница' : 'Branded profile page',
-                                lang === 'ru' ? 'Аналитика популярности' : 'Popularity analytics',
-                            ]}
-                            lang={lang}
-                        />
-                    </AnimatedSection>
-                </div>
-            </section>
-
-            {/* Community Section */}
-            <section className="py-16 md:py-28 relative">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="glass-card overflow-hidden p-0 border-white/5 bg-gradient-to-br from-dark-300/50 to-dark-400/50">
-                        <div className="flex flex-row items-stretch">
-                            <div className="w-[60%] p-4 sm:p-8 md:p-16 text-left flex flex-col justify-center items-start">
-                                <AnimatedSection>
-                                    <motion.span variants={fadeUp} className="badge-neon mb-2 md:mb-4 inline-flex items-center gap-1.5 text-[10px] md:text-xs">
-                                        <UsersStepIcon />
-                                        Community
-                                    </motion.span>
-                                    <motion.h2 variants={fadeUp} className="font-display text-xl sm:text-3xl md:text-5xl font-bold mb-2 md:mb-6 leading-tight">
-                                        {t('landing.communityTitle')} <span className="neon-text">{t('landing.communityTitleHL')}</span>
-                                    </motion.h2>
-                                    <motion.p variants={fadeUp} className="text-white/40 text-xs sm:text-sm md:text-lg mb-4 md:mb-8 leading-relaxed line-clamp-3 md:line-clamp-none">
-                                        {t('landing.communitySubtitle')}
-                                    </motion.p>
-                                    <motion.div variants={fadeUp}>
-                                        <Link to="/communities" className="neon-btn text-xs md:text-lg px-3 py-2 md:px-8 md:py-4 rounded-xl md:rounded-2xl inline-flex items-center gap-1.5 md:gap-2">
-                                            <GlobeIcon size={16} />
-                                            {t('landing.communityBtn')}
-                                        </Link>
-                                    </motion.div>
-                                </AnimatedSection>
-                            </div>
-                            <div className="relative w-[40%] min-h-[150px] sm:min-h-[250px] md:min-h-[400px] overflow-hidden group">
-                                <motion.div
-                                    className="absolute inset-0 bg-gradient-to-tr from-neon/20 to-purple-500/20 mix-blend-overlay z-10"
-                                    animate={{ opacity: [0.3, 0.6, 0.3] }}
-                                    transition={{ duration: 5, repeat: Infinity }}
-                                />
-                                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-700 group-hover:scale-105" />
-                                <div className="absolute inset-0 bg-gradient-to-r from-dark to-transparent" />
-                            </div>
+                        
+                        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 flex flex-col items-center">
+                            <div className="w-12 h-12 rounded-full bg-[#A3FF12]/10 text-[#A3FF12] flex items-center justify-center text-xl font-bold mb-6">2</div>
+                            <h3 className="text-xl font-bold mb-3">Подбор ИИ</h3>
+                            <p className="text-white/50 text-sm">Наш алгоритм найдет лучшего ментора или курс под твой бюджет.</p>
+                        </div>
+                        
+                        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 flex flex-col items-center">
+                            <div className="w-12 h-12 rounded-full bg-[#A3FF12]/10 text-[#A3FF12] flex items-center justify-center text-xl font-bold mb-6">3</div>
+                            <h3 className="text-xl font-bold mb-3">Обучение</h3>
+                            <p className="text-white/50 text-sm">Приступай к занятиям и достигай результатов.</p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* CTA Section */}
-            <section className="py-16 md:py-28 relative">
-                <div className="absolute inset-0 bg-glow-top pointer-events-none" />
-                <div className="absolute inset-0 bg-grid pointer-events-none opacity-50" />
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-                    <AnimatedSection>
-                        <motion.div variants={scaleIn} className="glass-card p-8 md:p-16 border border-neon/10 relative overflow-hidden">
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] bg-gradient-radial from-neon/10 to-transparent blur-3xl pointer-events-none" />
-                            <h2 className="font-display text-3xl md:text-5xl font-bold mb-4 md:mb-6 relative">
-                                {t('landing.ctaTitle')} <span className="neon-text">{t('landing.ctaTitleHL')}</span>?
-                            </h2>
-                            <p className="text-white/40 text-base md:text-lg mb-8 relative">
-                                {t('landing.ctaSubtitle')}
-                            </p>
-                            <Link to="/register" className="neon-btn text-lg px-10 py-4 rounded-2xl inline-flex items-center gap-2 relative">
-                                <RocketIcon size={20} />
-                                {t('landing.ctaBtn')}
-                            </Link>
-                        </motion.div>
-                    </AnimatedSection>
+            {/* 3. SOCIAL PROOF */}
+            <section className="py-20 px-4 bg-white/[0.01] border-y border-white/5 relative z-10">
+                <div className="max-w-5xl mx-auto">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">
+                        Уже <span className="text-[#A3FF12]">100+</span> студентов нашли обучение через SkillSwap
+                    </h2>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        <div className="bg-white/[0.03] rounded-3xl p-8 border border-white/5">
+                            <div className="flex gap-1 mb-4 text-[#A3FF12]">★★★★★</div>
+                            <p className="text-white/80 italic mb-6">«Подобрали крутого ментора по дизайну за 1 день. Раньше сам искал неделями.»</p>
+                            <div className="font-bold text-sm">— Азамат</div>
+                        </div>
+
+                        <div className="bg-white/[0.03] rounded-3xl p-8 border border-white/5">
+                            <div className="flex gap-1 mb-4 text-[#A3FF12]">★★★★★</div>
+                            <p className="text-white/80 italic mb-6">«Нашел курс по английскому дешевле и лучше, чем искал сам. Спасибо!»</p>
+                            <div className="font-bold text-sm">— Бектур</div>
+                        </div>
+
+                        <div className="bg-white/[0.03] rounded-3xl p-8 border border-white/5 sm:col-span-2 md:col-span-1">
+                            <div className="flex gap-1 mb-4 text-[#A3FF12]">★★★★★</div>
+                            <p className="text-white/80 italic mb-6">«Очень удобно — не нужно серфить по разным агрегаторам и сайтам.»</p>
+                            <div className="font-bold text-sm">— Алина</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 4. FINAL CTA */}
+            <section className="py-32 px-4 text-center relative z-10">
+                <div className="max-w-3xl mx-auto">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium mb-8">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        Осталось 20 бесплатных подборов на сегодня
+                    </div>
+                    <h2 className="text-4xl sm:text-5xl font-bold mb-10">Начни обучение уже сегодня</h2>
+                    <button 
+                        onClick={handleStart}
+                        className="w-full sm:w-auto bg-[#A3FF12] text-black text-xl font-bold py-6 px-12 rounded-2xl hover:bg-[#b0ff2e] transform hover:scale-[1.02] transition-all active:scale-95 shadow-[0_0_40px_rgba(163,255,18,0.3)]"
+                    >
+                        Начать сейчас
+                    </button>
                 </div>
             </section>
 
         </div>
-    );
-}
-
-function StatsItem({ value, label }) {
-    return (
-        <div className="text-center">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5, type: 'spring' }}
-                className="text-2xl md:text-3xl font-bold neon-text"
-            >
-                {value}
-            </motion.div>
-            <div className="text-sm text-white/35 mt-1">{label}</div>
-        </div>
-    );
-}
-
-function SkillCard({ name, icon, color, delay = 0 }) {
-    return (
-        <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 4, repeat: Infinity, delay, ease: 'easeInOut' }}
-            whileHover={{ scale: 1.05, y: -15 }}
-            className={`glass-card px-5 py-3.5 flex items-center gap-3 bg-gradient-to-br ${color} cursor-default group`}
-        >
-            <div className="group-hover:scale-110 transition-transform duration-300">
-                {icon}
-            </div>
-            <span className="font-medium text-white/80 group-hover:text-white transition-colors">{name}</span>
-        </motion.div>
-    );
-}
-
-function MarqueeSkillTag({ skill }) {
-    return (
-        <div className="flex-shrink-0 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white/40 text-sm font-medium whitespace-nowrap hover:border-neon/20 hover:text-neon/60 transition-colors cursor-default">
-            {skill}
-        </div>
-    );
-}
-
-function StepCard({ step, title, desc, icon }) {
-    return (
-        <motion.div variants={fadeUp} className="glass-card-hover p-7 text-center group relative">
-            <div className="w-14 h-14 rounded-2xl bg-neon/5 border border-neon/10 flex items-center justify-center mx-auto mb-4 group-hover:border-neon/30 group-hover:shadow-neon transition-all duration-500">
-                {icon}
-            </div>
-            <div className="text-neon/30 text-xs font-mono mb-2 tracking-wider">{step}</div>
-            <h3 className="text-lg font-bold mb-2 group-hover:text-neon transition-colors duration-300">{title}</h3>
-            <p className="text-white/35 text-sm leading-relaxed">{desc}</p>
-        </motion.div>
-    );
-}
-
-function FeatureCard({ title, desc, icon }) {
-    return (
-        <motion.div variants={fadeUp} className="glass-card-hover p-7 group">
-            <div className="w-12 h-12 rounded-xl bg-neon/5 border border-neon/10 flex items-center justify-center mb-4 group-hover:border-neon/30 group-hover:shadow-neon transition-all duration-500">
-                {icon}
-            </div>
-            <h3 className="text-lg font-bold mb-2 group-hover:text-neon transition-colors duration-300">{title}</h3>
-            <p className="text-white/35 text-sm leading-relaxed">{desc}</p>
-        </motion.div>
-    );
-}
-
-function PricingCard({ title, price, period, features, popular, oldPrice, discountLabel, lang }) {
-    return (
-        <motion.div
-            variants={fadeUp}
-            className={`glass-card p-8 relative flex flex-col ${popular ? 'border-neon/40 shadow-neon/10 scale-105 z-10 bg-white/[0.03]' : 'border-white/5 bg-white/[0.01]'}`}
-        >
-            {popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-neon text-dark text-xs font-bold rounded-full uppercase tracking-widest shadow-[0_0_15px_rgba(163,255,18,0.5)]">
-                    {lang === 'ru' ? 'Популярный' : 'Popular'}
-                </div>
-            )}
-            <h3 className="text-xl font-bold mb-4 text-white/90">{title}</h3>
-            <div className="flex flex-col gap-1 mb-6 min-h-[110px] justify-end">
-                {oldPrice && (
-                    <div className="flex items-center gap-2">
-                        <span className="text-white/20 line-through text-base">{oldPrice} СОМ</span>
-                        <span className="bg-red-500/20 text-red-400 text-[10px] px-1.5 py-0.5 rounded font-bold">
-                            -60%
-                        </span>
-                    </div>
-                )}
-                <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-display font-bold text-white">{price} СОМ</span>
-                    <span className="text-white/40 text-sm">/{period}</span>
-                </div>
-                {discountLabel && (
-                    <div className="mt-2 py-1.5 px-3 bg-neon/10 border border-neon/20 rounded-lg text-[10px] text-neon font-bold uppercase tracking-wider flex items-center gap-1.5 w-fit">
-                        <SparklesIcon size={12} />
-                        {discountLabel}
-                    </div>
-                )}
-            </div>
-            <ul className="space-y-4 mb-8 flex-grow text-left">
-                {features.map((f, i) => (
-                    <li key={i} className="flex items-center gap-3 text-sm text-white/60">
-                        <svg className="w-4 h-4 text-neon flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {f}
-                    </li>
-                ))}
-            </ul>
-            <Link to="/register" className={`w-full py-3 rounded-xl font-bold text-center transition-all ${popular ? 'bg-neon text-dark hover:shadow-neon shadow-[0_0_20px_rgba(163,255,18,0.2)]' : 'bg-white/5 text-white hover:bg-white/10'}`}>
-                {popular ? (lang === 'ru' ? 'Получить сейчас' : 'Get Started') : (lang === 'ru' ? 'Выбрать' : 'Choose Plan')}
-            </Link>
-        </motion.div>
-    );
-}
-
-// Step icons (inline SVGs)
-function UsersStepIcon() {
-    return (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-        </svg>
-    );
-}
-
-function CalendarStepIcon() {
-    return (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
-        </svg>
     );
 }
