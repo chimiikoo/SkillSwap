@@ -1,14 +1,14 @@
 import React from 'react';
 
 /**
- * Instagram-style verified badge, neon-lime themed.
- * Shows next to tutor names to distinguish them from students.
+ * Verified badge — only for admin-approved tutors.
  */
-export function VerifiedBadge({ size = 16, className = '' }) {
+export function VerifiedBadge({ size = 16, className = '', show = true, title }) {
+    if (!show) return null;
     return (
         <span
             className={`inline-flex items-center justify-center flex-shrink-0 ${className}`}
-            title="Verified Tutor"
+            title={title || 'Проверенный репетитор'}
             style={{ width: size, height: size }}
         >
             <svg
@@ -18,12 +18,10 @@ export function VerifiedBadge({ size = 16, className = '' }) {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
             >
-                {/* Background shield/badge shape — like Instagram verified */}
                 <path
                     d="M12 1L14.59 3.41L18 3L18.59 6.41L21.5 8.5L20.09 11.41L21.5 14.5L18.59 16.59L18 20L14.59 20.59L12 23L9.41 20.59L6 20L5.41 16.59L2.5 14.5L3.91 11.41L2.5 8.5L5.41 6.41L6 3L9.41 3.41L12 1Z"
                     fill="#A3FF12"
                 />
-                {/* Checkmark */}
                 <path
                     d="M9 12.5L11 14.5L15.5 10"
                     stroke="#0a0a0a"
@@ -34,6 +32,11 @@ export function VerifiedBadge({ size = 16, className = '' }) {
             </svg>
         </span>
     );
+}
+
+export function isTutorVerified(user) {
+    if (!user || (user.userType !== 'tutor' && user.userType !== 'school')) return false;
+    return user.tutorStatus === 'approved' || (!user.tutorStatus && user.isVerified);
 }
 
 /**

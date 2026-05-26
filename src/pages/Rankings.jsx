@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { StarIcon, CoinIcon, CrownIcon } from '../components/Icons';
-import { VerifiedBadge, PremiumBadge } from '../components/VerifiedBadge';
+import { VerifiedBadge, PremiumBadge, isTutorVerified } from '../components/VerifiedBadge';
+import { ALLOW_MOCKS } from '../utils/allowMocks';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 const fadeUp = {
@@ -79,7 +80,7 @@ function PodiumItem({ user, rank, height, glow = '', gradient, t }) {
 
                 {/* Stats hint inside podium block */}
                 <div className="mt-2 text-[10px] font-bold uppercase tracking-widest opacity-40 text-center">
-                    {user.sessionsCount || 0} {t('rankings.sessionsCountLabel')}
+                    {user.skillCoins || 0} SkillCoins
                 </div>
             </div>
         </motion.div>
@@ -222,7 +223,7 @@ export default function Rankings() {
                                             <div className="min-w-0">
                                                 <h3 className="font-bold flex items-center gap-2 text-base md:text-lg group-hover:text-neon transition-colors truncate">
                                                     {user.name}
-                                                    {user.userType === 'tutor' && <VerifiedBadge size={16} />}
+                                                    {isTutorVerified(user) && <VerifiedBadge size={16} />}
                                                     {user.isPremium && <PremiumBadge size={16} />}
                                                 </h3>
                                                 <p className="text-white/40 text-xs md:text-sm truncate font-medium">{user.university || 'SkillSwap Member'}</p>
@@ -241,9 +242,9 @@ export default function Rankings() {
                                             <div className="hidden sm:flex flex-col items-center">
                                                 <div className="text-white/80 font-black text-sm md:text-base flex items-center gap-1.5">
                                                     <CoinIcon size={14} className="text-neon" />
-                                                    {user.sessionsCount || 0}
+                                                    {user.skillCoins || 0}
                                                 </div>
-                                                <div className="text-[10px] font-bold text-white/20 uppercase tracking-tighter">{t('rankings.sessions')}</div>
+                                                <div className="text-[10px] font-bold text-white/20 uppercase tracking-tighter">SkillCoins</div>
                                             </div>
 
                                             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:bg-neon/10 transition-all">

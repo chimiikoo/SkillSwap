@@ -1,0 +1,8 @@
+# robots.txt — SkillSwap.kg
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /chat
+
+Sitemap: https://skillswap.kg/sitemap.xml

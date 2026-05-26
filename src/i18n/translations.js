@@ -219,6 +219,15 @@ export const translations = {
             statusCancelled: 'Отменено',
             potentialStudents: 'Потенциальные студенты',
             wantsToLearn: 'Хочет изучить',
+            // Onboarding
+            onboardingTitle: 'Начни своё обучение',
+            onboardingSubtitle: '3 простых шага чтобы найти идеального ментора',
+            onboardingStep1: 'Заполни профиль',
+            onboardingStep1Desc: 'Укажи навыки и расскажи о себе',
+            onboardingStep2: 'Найди ментора',
+            onboardingStep2Desc: 'Наш AI подберёт лучших менторов',
+            onboardingStep3: 'Запишись на сессию',
+            onboardingStep3Desc: 'Проведи свою первую сессию обмена',
         },
 
         // Search
@@ -669,6 +678,15 @@ export const translations = {
             statusCancelled: 'Жокко чыгарылды',
             potentialStudents: 'Потенциалдуу студенттер',
             wantsToLearn: 'Үйрөнгүсү келет',
+            // Onboarding
+            onboardingTitle: 'Окууңузду баштаңыз',
+            onboardingSubtitle: 'Идеалдуу менторду табуу үчүн 3 жөнөкөй кадам',
+            onboardingStep1: 'Профилди толтуруңуз',
+            onboardingStep1Desc: 'Көндүмдөрүңүздү жана өзүңүз жөнүндө жазыңыз',
+            onboardingStep2: 'Ментор табыңыз',
+            onboardingStep2Desc: 'Биздин AI эң мыкты менторлорду табат',
+            onboardingStep3: 'Сессияга жазылыңыз',
+            onboardingStep3Desc: 'Биринчи алмашуу сессияңызды өткөрүңүз',
         },
 
         search: {

@@ -18,6 +18,7 @@ import Footer from './components/Footer';
 import SubscriptionModal from './components/SubscriptionModal';
 import TopUpModal from './components/TopUpModal';
 import Rankings from './pages/Rankings';
+import Pricing from './pages/Pricing';
 
 function ProtectedRoute({ children, adminOnly = false }) {
     const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -41,33 +42,11 @@ function AppRoutes() {
     const [isSubModalOpen, setIsSubModalOpen] = React.useState(false);
     const [isTopUpOpen, setIsTopUpOpen] = React.useState(false);
 
-    React.useEffect(() => {
-        if (isAuthenticated) {
-            // 1. First login trigger
-            const hasSeenSub = localStorage.getItem('hasSeenSubscriptionFirstLogin');
-            if (!hasSeenSub) {
-                setTimeout(() => {
-                    setIsSubModalOpen(true);
-                    localStorage.setItem('hasSeenSubscriptionFirstLogin', 'true');
-                }, 1500); 
-            }
-
-            // 2. 2-minute timer trigger
-            const timer = setTimeout(() => {
-                setIsSubModalOpen(true);
-            }, 120000); 
-
-            return () => clearTimeout(timer);
-        }
-    }, [isAuthenticated]);
+    // Subscription modal now only opens via explicit user action (Navbar "Upgrade" button)
+    // No auto-popups — they kill retention for a new product
 
     const handleProfileClickTrigger = () => {
-        const clicks = parseInt(sessionStorage.getItem('profileClicks') || '0') + 1;
-        sessionStorage.setItem('profileClicks', clicks.toString());
-        
-        if (clicks % 3 === 0) {
-            setIsTopUpOpen(true);
-        }
+        // No-op — removed aggressive TopUp popup triggers
     };
 
     return (
@@ -87,6 +66,7 @@ function AppRoutes() {
                     <Route path="/communities" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
                     <Route path="/community/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
                     <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
+                    <Route path="/pricing" element={<Pricing />} />
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </div>

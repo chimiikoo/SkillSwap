@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { SkillIcon } from '../components/Icons';
-import { VerifiedBadge, PremiumBadge } from '../components/VerifiedBadge';
+import { VerifiedBadge, PremiumBadge, isTutorVerified } from '../components/VerifiedBadge';
+import { ALLOW_MOCKS } from '../utils/allowMocks';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 import {
     CoinIcon, StarIcon, BrainIcon, SearchIcon, RocketIcon, SparklesIcon, HeartIcon,
@@ -46,9 +47,9 @@ export default function Dashboard() {
     const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [matches, setMatches] = useState([]);
-    const [sessions, setSessions] = useState([]);
     const [recCommunities, setRecCommunities] = useState([]);
     const [potentialStudents, setPotentialStudents] = useState([]);
+    const [mySessions, setMySessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
@@ -74,21 +75,24 @@ export default function Dashboard() {
 
     const loadData = async () => {
         try {
-            const [statsData, matchesData, sessionsData] = await Promise.all([
+            const [statsData, matchesData] = await Promise.all([
                 apiFetch('/users/stats'),
                 apiFetch('/matching/recommendations'),
-                apiFetch('/sessions/my'),
             ]);
             setStats(statsData);
             setMatches(matchesData.matches || []);
-            setSessions(sessionsData.sessions || []);
         } catch {
-            setStats({ skillCoins: 5, sessionsCount: 0, avgRating: 0, reviewsCount: 0 });
-            setMatches(getMockMatches());
-            setSessions(getMockSessions());
+            if (ALLOW_MOCKS) {
+                setStats({ skillCoins: 5, reviewsCount: 0, avgRating: 0, followersCount: 0 });
+                setMatches(getMockMatches());
+            }
         } finally {
             setLoading(false);
         }
+        try {
+            const sessData = await apiFetch('/sessions/my');
+            setMySessions(sessData?.sessions || []);
+        } catch { }
         // Load recommended communities
         try {
             const commData = await apiFetch('/communities/recommended');
@@ -133,6 +137,88 @@ export default function Dashboard() {
                     <p className="text-white/40 mt-2">{t('dashboard.overview')}</p>
                 </motion.div>
 
+                {(user?.userType === 'tutor' || user?.userType === 'school') && user?.tutorStatus === 'pending' && (
+                    <div className="mb-6 p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-200/90 text-sm">
+                        <strong>Профиль на модерации.</strong> Пока вас не видят студенты в поиске. Обычно проверка занимает 24–48 часов.
+                    </div>
+                )}
+
+                {/* Onboarding Guide — shows for new users who haven't completed key actions */}
+                {!localStorage.getItem('skillswap_onboarding_dismissed') && (
+                    (user?.teachSkills?.length === 0 && user?.learnSkills?.length === 0)
+                ) && (
+                    <ScrollSection className="mb-8">
+                        <motion.div variants={fadeUp} className="glass-card p-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-neon/5 to-transparent rounded-bl-full pointer-events-none" />
+                            <button 
+                                onClick={() => { localStorage.setItem('skillswap_onboarding_dismissed', 'true'); window.location.reload(); }}
+                                className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white/30 hover:text-white/60 z-10"
+                                title="Скрыть"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                            </button>
+                            
+                            <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+                                <RocketIcon size={20} className="text-neon" />
+                                {t('dashboard.onboardingTitle') || 'Начни своё обучение'}
+                            </h3>
+                            <p className="text-white/40 text-sm mb-5">{t('dashboard.onboardingSubtitle') || '3 простых шага чтобы найти идеального ментора'}</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Step 1: Profile */}
+                                <Link to="/profile" className={`p-4 rounded-xl border transition-all group hover:border-neon/30 ${
+                                    (user?.teachSkills?.length > 0 || user?.learnSkills?.length > 0) && user?.bio
+                                        ? 'bg-neon/5 border-neon/20' 
+                                        : 'bg-white/[0.02] border-white/10'
+                                }`}>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                                            (user?.teachSkills?.length > 0 || user?.learnSkills?.length > 0) && user?.bio
+                                                ? 'bg-neon/20 text-neon' : 'bg-white/10 text-white/40'
+                                        }`}>
+                                            {(user?.teachSkills?.length > 0 || user?.learnSkills?.length > 0) && user?.bio ? '✓' : '1'}
+                                        </div>
+                                        <span className="font-medium text-sm group-hover:text-neon transition-colors">
+                                            {t('dashboard.onboardingStep1') || 'Заполни профиль'}
+                                        </span>
+                                    </div>
+                                    <p className="text-white/30 text-xs">{t('dashboard.onboardingStep1Desc') || 'Укажи навыки и расскажи о себе'}</p>
+                                </Link>
+
+                                {/* Step 2: Find mentor */}
+                                <Link to="/search" className="p-4 rounded-xl border bg-white/[0.02] border-white/10 transition-all group hover:border-neon/30">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold bg-white/10 text-white/40">2</div>
+                                        <span className="font-medium text-sm group-hover:text-neon transition-colors">
+                                            {t('dashboard.onboardingStep2') || 'Найди ментора'}
+                                        </span>
+                                    </div>
+                                    <p className="text-white/30 text-xs">{t('dashboard.onboardingStep2Desc') || 'Умный подбор подберёт лучших менторов'}</p>
+                                </Link>
+
+                                {/* Step 3: Contact */}
+                                <div className={`p-4 rounded-xl border transition-all ${
+                                    (stats?.chatsCount > 0 || stats?.reviewsCount > 0)
+                                        ? 'bg-neon/5 border-neon/20' 
+                                        : 'bg-white/[0.02] border-white/10'
+                                }`}>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                                            (stats?.chatsCount > 0 || stats?.reviewsCount > 0) ? 'bg-neon/20 text-neon' : 'bg-white/10 text-white/40'
+                                        }`}>
+                                            {(stats?.chatsCount > 0 || stats?.reviewsCount > 0) ? '✓' : '3'}
+                                        </div>
+                                        <span className="font-medium text-sm">
+                                            {t('dashboard.onboardingStep3') || 'Свяжись с наставником'}
+                                        </span>
+                                    </div>
+                                    <p className="text-white/30 text-xs">{t('dashboard.onboardingStep3Desc') || 'Напиши сообщение и договорись о занятиях вне платформы'}</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </ScrollSection>
+                )}
+
                 {/* Stats Grid */}
                 <ScrollSection className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                     <motion.div variants={fadeUp} custom={0} className="relative group/stat">
@@ -146,7 +232,7 @@ export default function Dashboard() {
                         </button>
                     </motion.div>
                     <motion.div variants={fadeUp} custom={1}>
-                        <StatCard icon={<CalendarIcon />} label={t('dashboard.sessionsStat')} value={stats?.sessionsCount || 0} />
+                        <StatCard icon={<ChatIcon />} label={t('dashboard.reviews') || 'Отзывы'} value={stats?.reviewsCount || 0} />
                     </motion.div>
                     <motion.div variants={fadeUp} custom={2}>
                         <StatCard icon={<StarIcon size={22} />} label={t('dashboard.rating')} value={Number(stats?.avgRating || 0).toFixed(1)} />
@@ -246,12 +332,31 @@ export default function Dashboard() {
                     </ScrollSection>
                 )}
 
-                {/* AI Recommendations */}
+                {/* My Sessions */}
+                {mySessions.length > 0 && (
+                    <ScrollSection className="mb-10">
+                        <motion.div variants={fadeUp} className="mb-4">
+                            <h2 className="text-xl font-bold flex items-center gap-2">📅 Мои занятия</h2>
+                        </motion.div>
+                        <div className="space-y-3">
+                            {mySessions.slice(0, 8).map(s => (
+                                <SessionRow key={s.id} session={s} userId={user?.id} onConfirm={async (sessionId) => {
+                                    try {
+                                        await apiFetch(`/sessions/${sessionId}/confirm`, { method: 'POST' });
+                                        loadData();
+                                    } catch (e) { alert(e.message); }
+                                }} />
+                            ))}
+                        </div>
+                    </ScrollSection>
+                )}
+
+                {/* Smart matching recommendations */}
                 <ScrollSection className="mb-10">
                     <motion.div variants={fadeUp} className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-bold flex items-center gap-2">
                             <SparklesIcon size={20} />
-                            AI Рекомендации
+                            Умный подбор
                         </h2>
                         <Link to="/search" className="text-neon text-sm hover:underline flex items-center gap-1">
                             {t('dashboard.allResults')}
@@ -314,30 +419,6 @@ export default function Dashboard() {
                         </div>
                     </ScrollSection>
                 )}
-
-                {/* Upcoming Sessions */}
-                <ScrollSection>
-                    <motion.div variants={fadeUp} className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold flex items-center gap-2">
-                            <CalendarIcon />
-                            {t('dashboard.upcomingSessions')}
-                        </h2>
-                    </motion.div>
-
-                    <div className="space-y-3">
-                        {sessions.slice(0, 5).map((session, i) => (
-                            <motion.div key={session.id || i} variants={fadeUp} custom={i}>
-                                <SessionCard session={session} />
-                            </motion.div>
-                        ))}
-                        {sessions.length === 0 && (
-                            <div className="glass-card p-8 text-center">
-                                <CalendarIcon size={24} className="mx-auto mb-3 opacity-30" />
-                                <p className="text-white/40">{t('dashboard.noSessions')} <Link to="/search" className="text-neon hover:underline">{t('dashboard.findPartner')}</Link></p>
-                            </div>
-                        )}
-                    </div>
-                </ScrollSection>
             </div>
         </div>
     );
@@ -383,7 +464,7 @@ function MatchCard({ match }) {
                     <div>
                         <h4 className="font-medium text-sm group-hover:text-neon transition-colors flex items-center gap-1.5 flex-wrap">
                             {match.name}
-                            {match.userType === 'tutor' && <VerifiedBadge size={14} />}
+                            {isTutorVerified(match) && <VerifiedBadge size={14} />}
                             {match.isPremium && <PremiumBadge size={14} />}
                         </h4>
                         <p className="text-white/30 text-xs">{match.university}</p>
@@ -467,52 +548,39 @@ function CommunityCard({ community: c, onJoin }) {
     );
 }
 
-function SessionCard({ session }) {
-    const { t } = useLanguage();
-    const statusMap = {
-        pending: { label: t('dashboard.statusPending') || 'Ожидание', style: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
-        offered: { label: t('dashboard.statusOffered') || 'Предложено', style: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-        active: { label: t('dashboard.statusActive') || 'Активно', style: 'bg-neon/10 text-neon border-neon/20' },
-        confirmed: { label: t('dashboard.statusActive') || 'Активно', style: 'bg-neon/10 text-neon border-neon/20' },
-        completed: { label: t('dashboard.statusCompleted') || 'Завершено', style: 'bg-green-500/10 text-green-400 border-green-500/20' },
-        cancelled: { label: t('dashboard.statusCancelled') || 'Отменено', style: 'bg-red-500/10 text-red-400 border-red-500/20' },
-    };
-    const st = statusMap[session.status] || statusMap.pending;
 
-    return (
-        <div className="glass-card-hover p-4 flex items-center justify-between group">
-            <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-neon/5 border border-neon/10 flex flex-col items-center justify-center group-hover:border-neon/20 transition-all">
-                    <span className="text-xs text-neon/50">{session.date?.split('-')[2] || '—'}</span>
-                    <span className="text-[10px] text-white/30">
-                        {session.date ? new Date(session.date).toLocaleString('ru', { month: 'short' }) : ''}
-                    </span>
-                </div>
-                <div>
-                    <p className="font-medium text-sm">{session.partnerName || t('dashboard.partner')}</p>
-                    <p className="text-white/30 text-xs">{session.skill || t('dashboard.skillNotSet')}</p>
-                </div>
-            </div>
-            <span className={`px-3 py-1 rounded-lg text-xs border ${st.style}`}>
-                {st.label}
-            </span>
-        </div>
-    );
-}
-
-function CalendarIcon({ size = 22 }) {
-    return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-    );
-}
 
 function ChatIcon({ size = 22 }) {
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A3FF12" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
+    );
+}
+
+function SessionRow({ session, userId, onConfirm }) {
+    const isRequester = session.requesterId === userId;
+    const myConfirmed = isRequester ? session.requesterConfirmed : session.providerConfirmed;
+    const otherConfirmed = isRequester ? session.providerConfirmed : session.requesterConfirmed;
+    const statusLabel = session.status === 'completed' ? 'Завершено' : session.status === 'requested' ? 'Запрошено' : session.status;
+
+    return (
+        <div className="glass-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <p className="font-medium text-sm">{session.partnerName}</p>
+                <p className="text-white/40 text-xs">{session.skill} · {session.date} {session.time}</p>
+                <span className="text-[10px] uppercase tracking-wider text-neon/70">{statusLabel}</span>
+            </div>
+            {session.status !== 'completed' && (
+                <button
+                    onClick={() => onConfirm(session.id)}
+                    disabled={myConfirmed}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold ${myConfirmed ? 'bg-white/5 text-white/30' : 'neon-btn'}`}
+                >
+                    {myConfirmed ? (otherConfirmed ? 'Ожидание...' : 'Вы подтвердили') : 'Занятие прошло'}
+                </button>
+            )}
+        </div>
     );
 }
 
@@ -527,9 +595,4 @@ function getMockMatches() {
     ];
 }
 
-function getMockSessions() {
-    return [
-        { id: '1', partnerName: 'Айдана К.', skill: 'Python', date: '2026-02-20', status: 'confirmed' },
-        { id: '2', partnerName: 'Бекзат А.', skill: 'UI/UX Design', date: '2026-02-22', status: 'pending' },
-    ];
-}
+

@@ -44,6 +44,9 @@ export default function Register() {
         city: '',
         teachingFormat: '',
         hourlyRate: '',
+        phone: '',
+        portfolioUrl: '',
+        verificationDocFile: null,
     });
 
     const totalSteps = 5; // role -> info -> teach -> learn/tutor-details -> verify
@@ -69,7 +72,16 @@ export default function Register() {
             }
         } else if (step === 5) {
             try {
-                await verifyAccount(form.email, code);
+                const data = await verifyAccount(form.email, code);
+                if (form.verificationDocFile && data?.token) {
+                    const fd = new FormData();
+                    fd.append('verificationDoc', form.verificationDocFile);
+                    await fetch(`${import.meta.env.VITE_API_URL || '/api'}/users/verification-doc`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${data.token}` },
+                        body: fd,
+                    });
+                }
                 navigate('/dashboard');
             } catch (err) {
                 setError(err.message);
@@ -589,6 +601,33 @@ export default function Register() {
                                     </div>
                                 </div>
 
+                                {/* Phone */}
+                                <div>
+                                    <label className="block text-sm text-white/50 mb-2">Телефон для связи *</label>
+                                    <input type="tel" value={form.phone}
+                                        onChange={e => setForm({ ...form, phone: e.target.value })}
+                                        className="input-dark"
+                                        placeholder="+996 555 123 456" />
+                                </div>
+
+                                {/* Portfolio */}
+                                <div>
+                                    <label className="block text-sm text-white/50 mb-2">Ссылка на портфолио / LinkedIn *</label>
+                                    <input type="url" value={form.portfolioUrl}
+                                        onChange={e => setForm({ ...form, portfolioUrl: e.target.value })}
+                                        className="input-dark"
+                                        placeholder="https://linkedin.com/in/..." />
+                                </div>
+
+                                {/* Verification document */}
+                                <div>
+                                    <label className="block text-sm text-white/50 mb-2">Документ (диплом / сертификат) — опционально</label>
+                                    <input type="file" accept="image/*,.pdf"
+                                        onChange={e => setForm({ ...form, verificationDocFile: e.target.files?.[0] || null })}
+                                        className="input-dark file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-neon/20 file:text-neon text-sm" />
+                                    <p className="text-white/30 text-xs mt-1">Профиль будет проверен модератором в течение 24–48 часов</p>
+                                </div>
+
                                 {/* Hourly Rate */}
                                 <div>
                                     <label className="block text-sm text-white/50 mb-2">
@@ -630,6 +669,14 @@ export default function Register() {
                                             }
                                             if (!form.hourlyRate) {
                                                 setError(t('register.fillHourlyRate') || 'Укажите стоимость');
+                                                return;
+                                            }
+                                            if (!form.phone?.trim()) {
+                                                setError('Укажите телефон');
+                                                return;
+                                            }
+                                            if (!form.portfolioUrl?.trim()) {
+                                                setError('Укажите ссылку на портфолио');
                                                 return;
                                             }
                                             setError('');

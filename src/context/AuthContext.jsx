@@ -75,12 +75,29 @@ export function AuthProvider({ children }) {
             const data = await handleResponse(res);
             if (data) {
                 setUnreadCount(prevCount => {
-                    // Show notification if we got a new message and page is backgrounded
-                    if (data.count > prevCount && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-                        new Notification('SkillSwap', {
-                            body: 'У вас новое сообщение!',
-                            icon: '/vite.svg'
-                        });
+                    if (data.count > prevCount && prevCount !== undefined) {
+                        // Play notification sound using Web Audio API
+                        try {
+                            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            const oscillator = audioCtx.createOscillator();
+                            const gainNode = audioCtx.createGain();
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioCtx.destination);
+                            oscillator.frequency.value = 880;
+                            oscillator.type = 'sine';
+                            gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                            oscillator.start(audioCtx.currentTime);
+                            oscillator.stop(audioCtx.currentTime + 0.4);
+                        } catch (e) { /* Audio not available */ }
+
+                        // Show browser notification if page is backgrounded
+                        if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+                            new Notification('SkillSwap', {
+                                body: 'У вас новое сообщение!',
+                                icon: '/vite.svg'
+                            });
+                        }
                     }
                     return data.count;
                 });

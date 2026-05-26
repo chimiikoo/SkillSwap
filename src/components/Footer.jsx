@@ -48,6 +48,7 @@ export default function Footer() {
                         <ul className="space-y-4">
                             <FooterLink to="/search">{t('nav.search')}</FooterLink>
                             <FooterLink to="/rankings">{t('nav.rankings') || 'Рейтинг'}</FooterLink>
+                            <FooterLink to="/pricing">Тарифы</FooterLink>
                             <FooterLink to="/communities">{t('nav.communities') || 'Сообщества'}</FooterLink>
                             <FooterLink to="/register">{t('nav.start')}</FooterLink>
                         </ul>

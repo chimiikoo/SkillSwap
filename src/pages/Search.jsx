@@ -6,8 +6,9 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { SKILL_CATEGORIES, ALL_SKILLS } from '../data/skills';
 import { UNIVERSITIES } from '../data/universities';
 import { SkillIcon, SearchIcon, SparklesIcon, StarIcon, HeartIcon } from '../components/Icons';
-import { VerifiedBadge } from '../components/VerifiedBadge';
+import { VerifiedBadge, isTutorVerified } from '../components/VerifiedBadge';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
+import { ALLOW_MOCKS } from '../utils/allowMocks';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 20 },
@@ -26,6 +27,7 @@ export default function Search() {
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
     const [skillFilter, setSkillFilter] = useState('');
+    const [learnSkillFilter, setLearnSkillFilter] = useState('');
     const [uniFilter, setUniFilter] = useState('');
     const [tutorOnly, setTutorOnly] = useState(false);
     const [schoolOnly, setSchoolOnly] = useState(false);
@@ -42,7 +44,7 @@ export default function Search() {
             const data = await apiFetch('/users/search');
             setUsers(data.users || []);
         } catch {
-            setUsers(getMockUsers());
+            if (ALLOW_MOCKS) setUsers(getMockUsers());
         } finally {
             setLoading(false);
         }
@@ -70,21 +72,27 @@ export default function Search() {
         }
     };
 
+    const q = query.toLowerCase().trim();
     const filtered = users
         .filter(u => {
-            const matchesQuery = !query || u.name?.toLowerCase().includes(query.toLowerCase()) ||
-                u.teachSkills?.some(s => s.toLowerCase().includes(query.toLowerCase()));
-            const matchesSkill = !skillFilter || u.teachSkills?.includes(skillFilter);
+            const matchesQuery = !q || u.name?.toLowerCase().includes(q) ||
+                u.bio?.toLowerCase().includes(q) ||
+                u.city?.toLowerCase().includes(q) ||
+                u.teachSkills?.some(s => s.toLowerCase().includes(q)) ||
+                u.learnSkills?.some(s => s.toLowerCase().includes(q));
+            const matchesTeachSkill = !skillFilter || u.teachSkills?.includes(skillFilter);
+            const matchesLearnSkill = !learnSkillFilter || u.learnSkills?.includes(learnSkillFilter);
             const matchesUni = !uniFilter || u.university === uniFilter;
             const matchesTutor = !tutorOnly || u.userType === 'tutor' || u.userType === 'school';
             const matchesSchool = !schoolOnly || u.userType === 'school';
             const matchesRating = !minRating || (u.rating || 0) >= minRating;
-            return matchesQuery && matchesSkill && matchesUni && matchesTutor && matchesSchool && matchesRating;
+            return matchesQuery && matchesTeachSkill && matchesLearnSkill && matchesUni && matchesTutor && matchesSchool && matchesRating;
         })
         .sort((a, b) => {
             if (sortBy === 'match') return (b.matchScore || 0) - (a.matchScore || 0);
             if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
             if (sortBy === 'sessions') return (b.sessionsCount || 0) - (a.sessionsCount || 0);
+            if (sortBy === 'price') return (a.hourlyRate || 99999) - (b.hourlyRate || 99999);
             return 0;
         });
 
@@ -97,7 +105,7 @@ export default function Search() {
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
                     <h1 className="font-display text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
                         <SearchIcon size={28} />
-                        {t('search.title')} <span className="neon-text">{t('search.titleHL')}</span>
+                        {t('search.title')} <span className="neon-text">и фильтры</span>
                     </h1>
                     <p className="text-white/40">{t('search.subtitle')}</p>
                 </motion.div>
@@ -139,11 +147,18 @@ export default function Search() {
                             transition={{ duration: 0.3 }}
                             className="overflow-hidden mb-6"
                         >
-                            <div className="glass-card p-5 grid md:grid-cols-4 gap-4">
+                            <div className="glass-card p-5 grid md:grid-cols-2 lg:grid-cols-5 gap-4 sticky top-20 z-20">
                                 <div>
-                                    <label className="text-xs text-white/40 mb-1.5 block">{t('search.skill')}</label>
+                                    <label className="text-xs text-white/40 mb-1.5 block">Преподаёт</label>
                                     <select value={skillFilter} onChange={e => setSkillFilter(e.target.value)} className="input-dark text-sm py-2">
                                         <option value="">{t('search.allSkills')}</option>
+                                        {ALL_SKILLS.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-white/40 mb-1.5 block">Хочет изучить</label>
+                                    <select value={learnSkillFilter} onChange={e => setLearnSkillFilter(e.target.value)} className="input-dark text-sm py-2">
+                                        <option value="">Любой</option>
                                         {ALL_SKILLS.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
@@ -168,6 +183,7 @@ export default function Search() {
                                     <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="input-dark text-sm py-2">
                                         <option value="match">{t('search.sortMatch')}</option>
                                         <option value="rating">{t('search.sortRating')}</option>
+                                        <option value="price">По цене ↑</option>
                                         <option value="sessions">{t('search.sortExp')}</option>
                                     </select>
                                 </div>
@@ -286,7 +302,7 @@ function UserCard({ user, onFollow }) {
                         <div>
                             <h3 className="font-medium group-hover:text-neon transition-colors flex items-center gap-1.5 flex-wrap">
                                 {user.name}
-                                {user.userType === 'tutor' && <VerifiedBadge size={15} />}
+                                {isTutorVerified(user) && <VerifiedBadge size={15} />}
                                 {user.userType === 'school' && (
                                     <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest">
                                         SCHOOL

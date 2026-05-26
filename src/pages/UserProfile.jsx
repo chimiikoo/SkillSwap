@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { SkillIcon, StarIcon, SparklesIcon, ShieldCheckIcon, HeartIcon, MapPinIcon, TrophyIcon, GraduationIcon as UniIcon } from '../components/Icons';
-import { VerifiedBadge } from '../components/VerifiedBadge';
+import { VerifiedBadge, isTutorVerified } from '../components/VerifiedBadge';
+import { ALLOW_MOCKS } from '../utils/allowMocks';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 const fadeUp = {
@@ -30,7 +31,7 @@ function ScrollSection({ children, className = '' }) {
 export default function UserProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { apiFetch } = useAuth();
+    const { apiFetch, user: currentUser } = useAuth();
     const { t } = useLanguage();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -41,6 +42,12 @@ export default function UserProfile() {
     const [reviewText, setReviewText] = useState('');
     const [message, setMessage] = useState('');
     const [isFollowLoading, setIsFollowLoading] = useState(false);
+    const [showBook, setShowBook] = useState(false);
+    const [bookDate, setBookDate] = useState('');
+    const [bookTime, setBookTime] = useState('');
+    const [bookSkill, setBookSkill] = useState('');
+    const [bookNote, setBookNote] = useState('');
+    const [bookLoading, setBookLoading] = useState(false);
 
     useEffect(() => {
         loadProfile();
@@ -52,7 +59,7 @@ export default function UserProfile() {
             const data = await apiFetch(`/users/${id}`);
             setProfile(data.user);
         } catch {
-            setProfile(getMockProfile());
+            if (ALLOW_MOCKS) setProfile(getMockProfile());
         } finally {
             setLoading(false);
         }
@@ -60,6 +67,33 @@ export default function UserProfile() {
 
     const handleMessage = () => {
         navigate('/chat', { state: { partnerId: id } });
+    };
+
+    const handleBookSession = async () => {
+        if (!bookDate) {
+            setMessage('Укажите дату занятия');
+            return;
+        }
+        setBookLoading(true);
+        try {
+            await apiFetch('/sessions/book', {
+                method: 'POST',
+                body: JSON.stringify({
+                    partnerId: id,
+                    date: bookDate,
+                    time: bookTime,
+                    skill: bookSkill || profile?.teachSkills?.[0] || '',
+                    note: bookNote,
+                }),
+            });
+            setMessage('Запрос отправлен! Репетитор увидит его в чате.');
+            setShowBook(false);
+            navigate('/chat', { state: { partnerId: id } });
+        } catch (err) {
+            setMessage(err.message || 'Ошибка записи');
+        } finally {
+            setBookLoading(false);
+        }
     };
 
     const handleReport = async () => {
@@ -253,7 +287,7 @@ export default function UserProfile() {
                                         profile.name?.charAt(0)
                                     )}
                                 </div>
-                                {profile.userType === 'tutor' && (
+                                {isTutorVerified(profile) && (
                                     <div className="absolute -bottom-1 -right-1">
                                         <VerifiedBadge size={28} className="drop-shadow-[0_0_8px_rgba(163,255,18,0.5)]" />
                                     </div>
@@ -312,10 +346,10 @@ export default function UserProfile() {
 
                             <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 transition-colors hover:bg-white/[0.04]">
                                 <div className="flex items-center gap-2 mb-1 text-white/40">
-                                    <SparklesIcon size={14} className="text-neon" />
-                                    <span className="text-[10px] uppercase font-bold tracking-wider">{t('dashboard.sessions')}</span>
+                                    <ChatIcon size={14} className="text-neon" />
+                                    <span className="text-[10px] uppercase font-bold tracking-wider">{t('dashboard.reviews') || 'Отзывов'}</span>
                                 </div>
-                                <span className="text-xl font-bold text-white">{profile.sessionsCount || 0}</span>
+                                <span className="text-xl font-bold text-white">{profile.reviews?.length || 0}</span>
                             </div>
 
                             {profile.userType === 'tutor' && (
@@ -349,6 +383,11 @@ export default function UserProfile() {
                                 <ChatIcon />
                                 {t('userProfile.sendMessage')}
                                 <span className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">→</span>
+                            </button>
+                        )}
+                        {profile.userType === 'tutor' && currentUser?.id !== id && (
+                            <button onClick={() => setShowBook(true)} className="glass-btn px-6 py-3 rounded-xl text-sm font-bold border border-neon/30 text-neon hover:bg-neon/10">
+                                📅 Запросить занятие
                             </button>
                         )}
                         <button onClick={() => setShowReview(true)} className="glass-btn px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 border border-white/10 hover:border-white/20 transition-all">
@@ -519,6 +558,40 @@ export default function UserProfile() {
                     </Modal>
                 )}
 
+                {showBook && (
+                    <Modal onClose={() => setShowBook(false)} title="Запросить занятие">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm text-white/40 mb-1 block">Навык</label>
+                                <select value={bookSkill} onChange={e => setBookSkill(e.target.value)} className="input-dark text-sm">
+                                    <option value="">Выберите навык</option>
+                                    {(profile?.teachSkills || []).map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-sm text-white/40 mb-1 block">Дата *</label>
+                                    <input type="date" value={bookDate} onChange={e => setBookDate(e.target.value)} className="input-dark text-sm" />
+                                </div>
+                                <div>
+                                    <label className="text-sm text-white/40 mb-1 block">Время</label>
+                                    <input type="time" value={bookTime} onChange={e => setBookTime(e.target.value)} className="input-dark text-sm" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-sm text-white/40 mb-1 block">Комментарий</label>
+                                <textarea value={bookNote} onChange={e => setBookNote(e.target.value)} className="input-dark resize-none text-sm" rows={2} placeholder="Цели занятия, уровень..." />
+                            </div>
+                            <p className="text-white/30 text-xs">Оплата обсуждается с репетитором в чате (бета).</p>
+                            <button onClick={handleBookSession} disabled={bookLoading} className="neon-btn w-full py-3 rounded-xl text-sm disabled:opacity-50">
+                                {bookLoading ? 'Отправка...' : 'Отправить запрос'}
+                            </button>
+                        </div>
+                    </Modal>
+                )}
+
                 {showReport && (
                     <Modal onClose={() => setShowReport(false)} title={t('userProfile.reportTitle')}>
                         <div className="space-y-3">
@@ -629,7 +702,7 @@ function getMockProfile() {
         city: 'Бишкек',
         teachingFormat: 'both',
         rating: 4.8,
-        sessionsCount: 154,
+        reviewsCount: 2,
         followersCount: 1250,
         followingCount: 89,
         isFollowing: false,

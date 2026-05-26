@@ -13,6 +13,14 @@ import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
 import Stripe from 'stripe';
+import {
+    calculateMatchScore,
+    calculateTutorStudentScore,
+    isMarketplaceVisible,
+    normalizeSkills,
+    MIN_MATCH_DISPLAY_SCORE,
+    PLATFORM_FEE_PERCENT,
+} from './matchingUtils.js';
 
 dotenv.config();
 
@@ -25,7 +33,7 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'swapio_secret_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'skillswap_secret_2026_production';
 const DB_PATH = join(__dirname, 'swapio.db');
 
 // Middleware
@@ -102,8 +110,23 @@ async function initDB() {
     try {
         db.run('ALTER TABLE users ADD COLUMN balance INTEGER DEFAULT 0');
     } catch (e) { }
+    try {
+        db.run('ALTER TABLE users ADD COLUMN tutorStatus TEXT DEFAULT "approved"');
+        db.run('ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ""');
+        db.run('ALTER TABLE users ADD COLUMN portfolioUrl TEXT DEFAULT ""');
+        db.run('ALTER TABLE users ADD COLUMN verificationDocUrl TEXT DEFAULT ""');
+        db.run('ALTER TABLE users ADD COLUMN tutorRejectReason TEXT DEFAULT ""');
+        db.run('ALTER TABLE users ADD COLUMN maxBudget INTEGER DEFAULT 0');
+    } catch (e) { }
+    try {
+        db.run('ALTER TABLE sessions ADD COLUMN note TEXT DEFAULT ""');
+        db.run('ALTER TABLE sessions ADD COLUMN paymentSkipped INTEGER DEFAULT 0');
+    } catch (e) { }
 
-    const PLATFORM_FEE_PERCENT = 15;
+    // Existing tutors without status → approved for backward compatibility
+    try {
+        db.run(`UPDATE users SET tutorStatus = 'approved' WHERE userType IN ('tutor', 'school') AND (tutorStatus IS NULL OR tutorStatus = '')`);
+    } catch (e) { }
 
     db.run(`
     CREATE TABLE IF NOT EXISTS sessions (
@@ -238,7 +261,8 @@ async function initDB() {
         db.run("DELETE FROM users WHERE email = 'admin@skillswap.kg'");
 
         const adminId = uuidv4();
-        const hashedPassword = bcrypt.hashSync('SkillSwap007', 10);
+        const adminPassword = process.env.ADMIN_PASSWORD || 'SkillSwap007';
+        const hashedPassword = bcrypt.hashSync(adminPassword, 10);
         db.run(`
       INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, role, rating, skillCoins, sessionsCount, isVerified)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -249,7 +273,7 @@ async function initDB() {
             JSON.stringify(['Python', 'Machine Learning']),
             'admin', 5.0, 999, 100, 1 // verified
         ]);
-        console.log(`Admin user created: ${adminEmail} / SkillSwap007`);
+        console.log(`Admin user created: ${adminEmail}`);
     }
 
     // Seed demo users (High Quality Tutors)
@@ -266,7 +290,8 @@ async function initDB() {
             city: 'Бишкек',
             teachingFormat: 'both',
             rating: 4.8,
-            sessionsCount: 154
+            sessionsCount: 154,
+            hourlyRate: 600
         },
         {
             name: 'Алексей Смирнов',
@@ -280,7 +305,8 @@ async function initDB() {
             city: 'Бишкек',
             teachingFormat: 'online',
             rating: 4.9,
-            sessionsCount: 210
+            sessionsCount: 210,
+            hourlyRate: 800
         },
         {
             name: 'Елена Воронцова',
@@ -294,7 +320,8 @@ async function initDB() {
             city: 'Ош',
             teachingFormat: 'both',
             rating: 5.0,
-            sessionsCount: 345
+            sessionsCount: 345,
+            hourlyRate: 700
         },
         {
             name: 'Тимур Батырканов',
@@ -308,7 +335,8 @@ async function initDB() {
             city: 'Бишкек',
             teachingFormat: 'offline',
             rating: 4.7,
-            sessionsCount: 89
+            sessionsCount: 89,
+            hourlyRate: 550
         }
     ];
 
@@ -318,12 +346,13 @@ async function initDB() {
             const id = uuidv4();
             const hashedPassword = bcrypt.hashSync('demo123', 10);
             db.run(`
-                INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat, rating, sessionsCount, isVerified)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat, rating, sessionsCount, isVerified, tutorStatus, hourlyRate)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'approved', ?)
             `, [
                 id, u.email, hashedPassword, u.name, u.university, u.bio,
                 JSON.stringify(u.teach || []), JSON.stringify(u.learn || []),
-                u.userType, u.experience, u.city, u.teachingFormat, u.rating, u.sessionsCount
+                u.userType, u.experience, u.city, u.teachingFormat, u.rating, u.sessionsCount,
+                u.hourlyRate || 500
             ]);
         }
     }
@@ -358,19 +387,31 @@ function queryOne(sql, params = []) {
 
 function parseUser(row) {
     if (!row) return null;
+    const userType = row.userType || 'student';
     return {
         ...row,
-        teachSkills: JSON.parse(row.teachSkills || '[]'),
-        learnSkills: JSON.parse(row.learnSkills || '[]'),
+        teachSkills: normalizeSkills(JSON.parse(row.teachSkills || '[]')),
+        learnSkills: normalizeSkills(JSON.parse(row.learnSkills || '[]')),
         blocked: !!row.blocked,
-        userType: row.userType || 'student',
+        userType,
         experience: row.experience || 0,
         city: row.city || '',
         teachingFormat: row.teachingFormat || '',
         isPremium: !!row.isPremium,
         hourlyRate: row.hourlyRate || 0,
         balance: row.balance || 0,
+        tutorStatus: row.tutorStatus || ((userType === 'tutor' || userType === 'school') ? 'pending' : 'approved'),
+        phone: row.phone || '',
+        portfolioUrl: row.portfolioUrl || '',
+        verificationDocUrl: row.verificationDocUrl || '',
+        tutorRejectReason: row.tutorRejectReason || '',
+        maxBudget: row.maxBudget || 0,
+        isVerified: !!row.isVerified,
     };
+}
+
+function isVisibleUser(user) {
+    return isMarketplaceVisible(parseUser(user));
 }
 
 // Auth middleware
@@ -493,10 +534,17 @@ async function sendVerificationEmail(email, code) {
 
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat, hourlyRate } = req.body;
+        const { email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat, hourlyRate, phone, portfolioUrl, verificationDocUrl } = req.body;
 
         if (!email || !password || !name) {
             return res.status(400).json({ error: 'Email, пароль и имя обязательны' });
+        }
+
+        const isTutorSignup = userType === 'tutor' || userType === 'school';
+        if (isTutorSignup) {
+            if (!phone?.trim()) return res.status(400).json({ error: 'Укажите телефон для связи' });
+            if (!portfolioUrl?.trim()) return res.status(400).json({ error: 'Укажите ссылку на портфолио или профиль' });
+            if (!experience) return res.status(400).json({ error: 'Укажите опыт преподавания' });
         }
 
         const existing = queryOne('SELECT id FROM users WHERE email = ?', [email]);
@@ -504,16 +552,19 @@ app.post('/api/auth/register', async (req, res) => {
 
         const id = uuidv4();
         const hashedPassword = await bcrypt.hash(password, 10);
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
-        const role = (userType === 'tutor' || userType === 'school') ? userType : 'student';
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const tutorStatus = isTutorSignup ? 'pending' : 'approved';
+        const normalizedTeach = normalizeSkills(teachSkills || []);
+        const normalizedLearn = normalizeSkills(learnSkills || []);
 
         db.run(`
-      INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, isVerified, verificationCode, userType, experience, city, teachingFormat, hourlyRate)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, isVerified, verificationCode, userType, experience, city, teachingFormat, hourlyRate, tutorStatus, phone, portfolioUrl, verificationDocUrl)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [id, email, hashedPassword, name, university || '', bio || '',
-            JSON.stringify(teachSkills || []), JSON.stringify(learnSkills || []),
+            JSON.stringify(normalizedTeach), JSON.stringify(normalizedLearn),
             0, verificationCode,
-            userType || 'student', experience || 0, city || '', teachingFormat || '', hourlyRate || 0]); // isVerified = 0
+            userType || 'student', experience || 0, city || '', teachingFormat || '', hourlyRate || 0,
+            tutorStatus, phone || '', portfolioUrl || '', verificationDocUrl || '']);
 
         saveDB();
 
@@ -529,20 +580,14 @@ app.post('/api/auth/register', async (req, res) => {
             emailSent = false;
         }
 
+        const basePayload = { message: 'Code sent', email, tutorStatus };
         if (emailSent) {
-            res.json({ message: 'Code sent', email });
+            res.json(basePayload);
         } else if (emailSimulated) {
-            // Dev mode — email not configured, code logged to console
-            res.json({ message: 'Code sent', email, debug: true, code: verificationCode });
+            res.json({ ...basePayload, debug: true, code: verificationCode });
         } else {
-            // Email failed but user was created — return code so they can still verify
             console.log(`⚠️ Returning verification code in response because email failed`);
-            res.json({
-                message: 'Code sent',
-                email,
-                emailError: true,
-                code: verificationCode
-            });
+            res.json({ ...basePayload, emailError: true, code: verificationCode });
         }
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -704,7 +749,7 @@ app.put('/api/users/profile', auth, (req, res) => {
         const existing = queryOne('SELECT * FROM users WHERE id = ?', [req.userId]);
         if (!existing) return res.status(404).json({ error: 'User not found' });
 
-        const { name, university, bio, teachSkills, learnSkills, avatarUrl, hourlyRate } = req.body;
+        const { name, university, bio, teachSkills, learnSkills, avatarUrl, hourlyRate, maxBudget } = req.body;
 
         db.run(`
             UPDATE users SET 
@@ -714,16 +759,18 @@ app.put('/api/users/profile', auth, (req, res) => {
                 teachSkills = ?, 
                 learnSkills = ?, 
                 avatarUrl = ?,
-                hourlyRate = ?
+                hourlyRate = ?,
+                maxBudget = ?
             WHERE id = ?
         `, [
             name !== undefined ? name : existing.name,
             university !== undefined ? university : existing.university,
             bio !== undefined ? bio : existing.bio,
-            teachSkills !== undefined ? JSON.stringify(teachSkills) : existing.teachSkills,
-            learnSkills !== undefined ? JSON.stringify(learnSkills) : existing.learnSkills,
+            teachSkills !== undefined ? JSON.stringify(normalizeSkills(teachSkills)) : existing.teachSkills,
+            learnSkills !== undefined ? JSON.stringify(normalizeSkills(learnSkills)) : existing.learnSkills,
             avatarUrl !== undefined ? avatarUrl : existing.avatarUrl,
             hourlyRate !== undefined ? hourlyRate : existing.hourlyRate,
+            maxBudget !== undefined ? maxBudget : (existing.maxBudget || 0),
             req.userId
         ]);
 
@@ -751,29 +798,61 @@ app.get('/api/users/search', auth, (req, res) => {
     const users = queryAll("SELECT * FROM users WHERE id != ? AND blocked = 0 AND role != 'admin'", [req.userId]);
     const currentUser = parseUser(queryOne('SELECT * FROM users WHERE id = ?', [req.userId]));
 
-    const scoredUsers = users.map(u => {
-        const parsed = parseUser(u);
-        const matchResult = calculateMatchScore(currentUser, parsed);
+    const scoredUsers = users
+        .filter(u => isVisibleUser(u))
+        .map(u => {
+            const parsed = parseUser(u);
+            const matchResult = calculateMatchScore(currentUser, parsed);
 
-        const fCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followedId = ?', [u.id]).count;
-        const isF = !!queryOne('SELECT 1 FROM follows WHERE followerId = ? AND followedId = ?', [req.userId, u.id]);
+            const fCount = queryOne('SELECT COUNT(*) as count FROM follows WHERE followedId = ?', [u.id]).count;
+            const isF = !!queryOne('SELECT 1 FROM follows WHERE followerId = ? AND followedId = ?', [req.userId, u.id]);
 
-        return {
-            ...parsed,
-            password: undefined,
-            matchScore: matchResult.score,
-            matchReason: matchResult.reason,
-            followersCount: fCount,
-            isFollowing: isF
-        };
-    }).sort((a, b) => b.matchScore - a.matchScore);
+            return {
+                ...parsed,
+                password: undefined,
+                matchScore: matchResult.score,
+                matchReason: matchResult.reason,
+                reason: matchResult.reason,
+                followersCount: fCount,
+                isFollowing: isF
+            };
+        }).sort((a, b) => b.matchScore - a.matchScore);
 
     res.json({ users: scoredUsers });
 });
 
+app.get('/api/users/featured', (req, res) => {
+    const users = queryAll(`
+        SELECT * FROM users
+        WHERE blocked = 0 AND role != 'admin'
+        AND userType = 'tutor' AND tutorStatus = 'approved'
+        ORDER BY rating DESC, sessionsCount DESC
+        LIMIT 6
+    `);
+    res.json({
+        tutors: users.map(u => {
+            const parsed = parseUser(u);
+            return {
+                id: parsed.id,
+                name: parsed.name,
+                university: parsed.university,
+                rating: parsed.rating,
+                reviewsCount: parsed.reviewsCount,
+                teachSkills: parsed.teachSkills,
+                city: parsed.city,
+                teachingFormat: parsed.teachingFormat,
+                hourlyRate: parsed.hourlyRate,
+                avatarUrl: parsed.avatarUrl,
+                sessionsCount: parsed.sessionsCount,
+                isPremium: parsed.isPremium,
+            };
+        }),
+    });
+});
+
 app.get('/api/users/rankings', auth, (req, res) => {
     try {
-        const tutors = queryAll("SELECT * FROM users WHERE userType = 'tutor' AND blocked = 0 AND role != 'admin' ORDER BY rating DESC, sessionsCount DESC LIMIT 50");
+        const tutors = queryAll("SELECT * FROM users WHERE userType = 'tutor' AND tutorStatus = 'approved' AND blocked = 0 AND role != 'admin' ORDER BY rating DESC, sessionsCount DESC LIMIT 50");
 
         const scoredTutors = tutors.map(u => {
             const parsed = parseUser(u);
@@ -802,6 +881,11 @@ app.get('/api/users/rankings', auth, (req, res) => {
 app.get('/api/users/:id', auth, (req, res) => {
     const user = parseUser(queryOne('SELECT * FROM users WHERE id = ?', [req.params.id]));
     if (!user || user.role === 'admin') return res.status(404).json({ error: 'User not found' });
+
+    const isOwner = req.params.id === req.userId;
+    if (!isOwner && (user.userType === 'tutor' || user.userType === 'school') && user.tutorStatus !== 'approved') {
+        return res.status(404).json({ error: 'Профиль на модерации' });
+    }
 
     const currentUser = parseUser(queryOne('SELECT * FROM users WHERE id = ?', [req.userId]));
     const matchResult = calculateMatchScore(currentUser, user);
@@ -857,96 +941,36 @@ app.post('/api/users/:id/unfollow', auth, (req, res) => {
     }
 });
 
-// =================== AI MATCHING ===================
-
-function calculateMatchScore(currentUser, targetUser) {
-    if (!currentUser || !targetUser) return { score: 0, reason: '', commonSkills: [] };
-
-    let score = 0;
-    const reasons = [];
-
-    // 1. Skill barter match (most important - 40 points)
-    const myLearnTheyTeach = currentUser.learnSkills.filter(s => targetUser.teachSkills.includes(s));
-    const myTeachTheyLearn = currentUser.teachSkills.filter(s => targetUser.learnSkills.includes(s));
-
-    if (myLearnTheyTeach.length > 0) {
-        score += Math.min(myLearnTheyTeach.length * 10, 20);
-        reasons.push(`Может научить вас: ${myLearnTheyTeach.join(', ')}`);
-    }
-
-    if (myTeachTheyLearn.length > 0) {
-        score += Math.min(myTeachTheyLearn.length * 10, 20);
-        reasons.push(`Хочет изучить у вас: ${myTeachTheyLearn.join(', ')}`);
-    }
-
-    // Perfect barter bonus
-    if (myLearnTheyTeach.length > 0 && myTeachTheyLearn.length > 0) {
-        score += 15;
-        reasons.push('Идеальный бартер навыков!');
-    }
-
-    // 2. Rating bonus (up to 15 points)
-    score += Math.min((targetUser.rating || 0) * 3, 15);
-
-    // 3. Same university bonus (10 points)
-    if (currentUser.university && targetUser.university && currentUser.university === targetUser.university) {
-        score += 10;
-        reasons.push('Учится в вашем университете');
-    }
-
-    // 4. Experience/sessions bonus (up to 10 points)
-    score += Math.min((targetUser.sessionsCount || 0) * 0.5, 10);
-
-    // 5. Low report count bonus (up to 10 points)
-    if ((targetUser.reportCount || 0) === 0) {
-        score += 10;
-    } else if (targetUser.reportCount < 2) {
-        score += 5;
-    }
-
-    // 6. Premium user bonus (15 points)
-    if (targetUser.isPremium) {
-        score += 15;
-        // Don't add to reason here to keep it subtle but effective, 
-        // OR add it if requested. The user said "студентам будут в первую очередь рекомендовать репетитора с подпиской"
-    }
-
-    score = Math.min(Math.round(score), 100);
-
-    const reason = reasons.length > 0
-        ? reasons.join('. ')
-        : `Рейтинг ${targetUser.rating?.toFixed(1)}, ${targetUser.sessionsCount || 0} проведённых сессий`;
-
-    return {
-        score,
-        reason,
-        commonSkills: [...new Set([...myLearnTheyTeach, ...myTeachTheyLearn])],
-    };
-}
-
 // =================== MATCHING ROUTES ===================
 
 app.get('/api/matching/recommendations', auth, (req, res) => {
     const currentUser = parseUser(queryOne('SELECT * FROM users WHERE id = ?', [req.userId]));
     const users = queryAll("SELECT * FROM users WHERE id != ? AND blocked = 0 AND role != 'admin'", [req.userId]);
 
-    const matches = users.map(u => {
-        const parsed = parseUser(u);
-        const match = calculateMatchScore(currentUser, parsed);
-        return {
-            id: parsed.id,
-            name: parsed.name,
-            university: parsed.university,
-            rating: parsed.rating,
-            teachSkills: parsed.teachSkills,
-            learnSkills: parsed.learnSkills,
-            matchScore: match.score,
-            reason: match.reason,
-            commonSkills: match.commonSkills,
-            avatarUrl: parsed.avatarUrl,
-            userType: parsed.userType || 'student'
-        };
-    })
+    const matches = users
+        .filter(u => isVisibleUser(u))
+        .map(u => {
+            const parsed = parseUser(u);
+            const match = calculateMatchScore(currentUser, parsed);
+            return {
+                id: parsed.id,
+                name: parsed.name,
+                university: parsed.university,
+                rating: parsed.rating,
+                teachSkills: parsed.teachSkills,
+                learnSkills: parsed.learnSkills,
+                matchScore: match.score,
+                reason: match.reason,
+                commonSkills: match.commonSkills,
+                avatarUrl: parsed.avatarUrl,
+                userType: parsed.userType || 'student',
+                hourlyRate: parsed.hourlyRate,
+                city: parsed.city,
+                teachingFormat: parsed.teachingFormat,
+                tutorStatus: parsed.tutorStatus,
+            };
+        })
+        .filter(m => m.matchScore >= MIN_MATCH_DISPLAY_SCORE)
         .sort((a, b) => b.matchScore - a.matchScore)
         .slice(0, 10);
 
@@ -964,15 +988,20 @@ app.get('/api/matching/potential-students', auth, (req, res) => {
         const tutorTeach = currentUser.teachSkills || [];
         if (tutorTeach.length === 0) return res.json({ students: [] });
 
+        if (currentUser.tutorStatus !== 'approved') {
+            return res.json({ students: [] });
+        }
+
         const users = queryAll("SELECT * FROM users WHERE id != ? AND blocked = 0 AND role != 'admin'", [req.userId]);
 
         const students = users.map(u => {
             const parsed = parseUser(u);
             const studentLearn = parsed.learnSkills || [];
-            const overlap = tutorTeach.filter(s => studentLearn.includes(s));
-            if (overlap.length === 0) return null;
+            const result = calculateTutorStudentScore(tutorTeach, studentLearn);
+            if (!result.hasOverlap) return null;
 
-            const score = Math.min(100, Math.round((overlap.length / tutorTeach.length) * 100));
+            const score = result.score;
+            const overlap = result.overlap;
             return {
                 id: parsed.id,
                 name: parsed.name,
@@ -998,8 +1027,25 @@ app.get('/api/matching/potential-students', auth, (req, res) => {
 
 // =================== SESSION ROUTES ===================
 
+function sendSystemChatMessage(senderId, receiverId, text) {
+    const id = uuidv4();
+    db.run(`
+        INSERT INTO messages (id, senderId, receiverId, text, type)
+        VALUES (?, ?, ?, ?, 'text')
+    `, [id, senderId, receiverId, text]);
+}
+
 app.post('/api/sessions/book', auth, (req, res) => {
-    const { partnerId, date, time, skill } = req.body;
+    const { partnerId, date, time, skill, note } = req.body;
+
+    if (!partnerId || !date) {
+        return res.status(400).json({ error: 'Укажите репетитора и дату' });
+    }
+
+    const provider = parseUser(queryOne('SELECT * FROM users WHERE id = ?', [partnerId]));
+    if (!provider || (provider.userType === 'tutor' && provider.tutorStatus !== 'approved')) {
+        return res.status(400).json({ error: 'Репетитор недоступен для записи' });
+    }
 
     // Anti-abuse: max 1 hour per day per person
     const existingToday = queryOne(`
@@ -1033,13 +1079,17 @@ app.post('/api/sessions/book', auth, (req, res) => {
     }
 
     const id = uuidv4();
+    const requester = parseUser(queryOne('SELECT name FROM users WHERE id = ?', [req.userId]));
     db.run(`
-    INSERT INTO sessions (id, requesterId, providerId, skill, date, time)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `, [id, req.userId, partnerId, skill || '', date, time || '']);
+    INSERT INTO sessions (id, requesterId, providerId, skill, date, time, status, note, paymentSkipped)
+    VALUES (?, ?, ?, ?, ?, ?, 'requested', ?, 1)
+  `, [id, req.userId, partnerId, skill || '', date, time || '', note || '']);
+
+    const chatText = `📅 Запрос на занятие: ${skill || 'занятие'} — ${date}${time ? ` в ${time}` : ''}${note ? `. ${note}` : ''}`;
+    sendSystemChatMessage(req.userId, partnerId, chatText);
 
     saveDB();
-    res.json({ session: { id, status: 'pending' } });
+    res.json({ session: { id, status: 'requested' } });
 });
 
 app.get('/api/sessions/my', auth, (req, res) => {
@@ -1078,17 +1128,14 @@ app.post('/api/sessions/:id/confirm', auth, (req, res) => {
         const requester = queryOne('SELECT * FROM users WHERE id = ?', [updated.requesterId]);
         const provider = queryOne('SELECT * FROM users WHERE id = ?', [updated.providerId]);
         
-        // If it's a tutor session with a price
-        if (provider.userType === 'tutor' && provider.hourlyRate > 0) {
+        const skipPayment = updated.paymentSkipped === 1 || process.env.BETA_SKIP_PAYMENTS !== 'false';
+        if (!skipPayment && provider.userType === 'tutor' && provider.hourlyRate > 0) {
             const amount = provider.hourlyRate;
             const fee = Math.floor(amount * (PLATFORM_FEE_PERCENT / 100));
             const tutorEarned = amount - fee;
-            
-            // Deduct from student, add to tutor
             db.run('UPDATE users SET balance = balance - ? WHERE id = ?', [amount, updated.requesterId]);
             db.run('UPDATE users SET balance = balance + ? WHERE id = ?', [tutorEarned, updated.providerId]);
-            
-            console.log(`Financial Transfer: Student ${updated.requesterId} paid ${amount}. Platform fee: ${fee}. Tutor ${updated.providerId} earned ${tutorEarned}.`);
+            console.log(`Financial Transfer: Student ${updated.requesterId} paid ${amount}. Platform fee: ${fee}.`);
         }
 
         db.run('UPDATE users SET sessionsCount = sessionsCount + 1 WHERE id = ?', [updated.requesterId]);
@@ -1153,17 +1200,51 @@ app.post('/api/reports/create', auth, (req, res) => {
 // =================== ADMIN ROUTES ===================
 
 app.get('/api/admin/stats', adminAuth, (req, res) => {
-    const activeUsers = queryOne('SELECT COUNT(*) as count FROM users WHERE blocked = 0');
+    const activeUsers = queryOne('SELECT COUNT(*) as count FROM users WHERE blocked = 0 AND role != \'admin\'');
     const totalSessions = queryOne('SELECT COUNT(*) as count FROM sessions');
+    const completedSessions = queryOne("SELECT COUNT(*) as count FROM sessions WHERE status = 'completed'");
     const avgRating = queryOne('SELECT AVG(rating) as avg FROM users WHERE rating > 0');
     const pendingReports = queryOne("SELECT COUNT(*) as count FROM reports WHERE status = 'pending'");
+    const tutorsApproved = queryOne("SELECT COUNT(*) as count FROM users WHERE userType = 'tutor' AND tutorStatus = 'approved'");
+    const tutorsPending = queryOne("SELECT COUNT(*) as count FROM users WHERE userType IN ('tutor', 'school') AND tutorStatus = 'pending'");
+    const studentsCount = queryOne("SELECT COUNT(*) as count FROM users WHERE userType = 'student' OR userType IS NULL OR userType = ''");
 
     res.json({
         activeUsers: activeUsers?.count || 0,
         totalSessions: totalSessions?.count || 0,
+        completedSessions: completedSessions?.count || 0,
         avgRating: avgRating?.avg || 0,
         pendingReports: pendingReports?.count || 0,
+        tutorsApproved: tutorsApproved?.count || 0,
+        tutorsPending: tutorsPending?.count || 0,
+        studentsCount: studentsCount?.count || 0,
     });
+});
+
+app.get('/api/admin/tutor-applications', adminAuth, (req, res) => {
+    const users = queryAll(`
+        SELECT * FROM users
+        WHERE userType IN ('tutor', 'school') AND tutorStatus = 'pending'
+        ORDER BY createdAt DESC
+    `);
+    res.json({ applications: users.map(u => ({ ...parseUser(u), password: undefined })) });
+});
+
+app.post('/api/admin/tutors/:id/approve', adminAuth, (req, res) => {
+    const user = queryOne('SELECT id FROM users WHERE id = ?', [req.params.id]);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    db.run("UPDATE users SET tutorStatus = 'approved', tutorRejectReason = '' WHERE id = ?", [req.params.id]);
+    saveDB();
+    res.json({ success: true, tutorStatus: 'approved' });
+});
+
+app.post('/api/admin/tutors/:id/reject', adminAuth, (req, res) => {
+    const { reason } = req.body;
+    const user = queryOne('SELECT id FROM users WHERE id = ?', [req.params.id]);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    db.run("UPDATE users SET tutorStatus = 'rejected', tutorRejectReason = ? WHERE id = ?", [reason || 'Не соответствует требованиям', req.params.id]);
+    saveDB();
+    res.json({ success: true, tutorStatus: 'rejected' });
 });
 
 app.get('/api/admin/users', adminAuth, (req, res) => {
@@ -1305,6 +1386,18 @@ app.post('/api/chat/upload', auth, upload.single('file'), (req, res) => {
         type: req.file.mimetype.startsWith('image/') ? 'image' :
             req.file.mimetype.startsWith('audio/') ? 'voice' : 'file'
     });
+});
+
+app.post('/api/users/verification-doc', auth, upload.single('verificationDoc'), (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        const verificationDocUrl = `/api/uploads/${req.file.filename}`;
+        db.run('UPDATE users SET verificationDocUrl = ? WHERE id = ?', [verificationDocUrl, req.userId]);
+        saveDB();
+        res.json({ success: true, verificationDocUrl });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.post('/api/users/avatar', auth, upload.single('avatar'), (req, res) => {

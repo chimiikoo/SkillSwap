@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion } from 'framer-motion';
-import { SkillIcon, UsersIcon, StarIcon, AlertTriangleIcon, CoinIcon, BrainIcon, TrashIcon } from '../components/Icons';
+import { SkillIcon, UsersIcon, StarIcon, AlertTriangleIcon, BrainIcon, TrashIcon } from '../components/Icons';
+import { ALLOW_MOCKS } from '../utils/allowMocks';
+import { resolveFileUrl } from '../utils/resolveFileUrl';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 20 },
@@ -16,6 +18,7 @@ export default function AdminPanel() {
     const [users, setUsers] = useState([]);
     const [reports, setReports] = useState([]);
     const [stats, setStats] = useState(null);
+    const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -24,18 +27,24 @@ export default function AdminPanel() {
 
     const loadAdminData = async () => {
         try {
-            const [usersData, reportsData, statsData] = await Promise.all([
+            const [usersData, reportsData, statsData, appsData] = await Promise.all([
                 apiFetch('/admin/users'),
                 apiFetch('/admin/reports'),
                 apiFetch('/admin/stats'),
+                apiFetch('/admin/tutor-applications'),
             ]);
             setUsers(usersData.users || []);
             setReports(reportsData.reports || []);
             setStats(statsData);
-        } catch {
-            setUsers(getMockUsers());
-            setReports(getMockReports());
-            setStats(getMockStats());
+            setApplications(appsData.applications || []);
+        } catch (err) {
+            if (ALLOW_MOCKS) {
+                setUsers(getMockUsers());
+                setReports(getMockReports());
+                setStats(getMockStats());
+            } else {
+                console.error(err);
+            }
         } finally {
             setLoading(false);
         }
@@ -63,10 +72,41 @@ export default function AdminPanel() {
         }
     };
 
-    const handleResolveReport = (reportId) => {
-        setReports(prev => prev.map(r =>
-            r.id === reportId ? { ...r, status: 'resolved' } : r
-        ));
+    const handleResolveReport = async (reportId) => {
+        try {
+            await apiFetch(`/admin/reports/${reportId}/resolve`, { method: 'POST' });
+            setReports(prev => prev.map(r =>
+                r.id === reportId ? { ...r, status: 'resolved' } : r
+            ));
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    const handleApproveTutor = async (userId) => {
+        try {
+            await apiFetch(`/admin/tutors/${userId}/approve`, { method: 'POST' });
+            setApplications(prev => prev.filter(a => a.id !== userId));
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, tutorStatus: 'approved' } : u));
+            loadAdminData();
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    const handleRejectTutor = async (userId) => {
+        const reason = window.prompt('Причина отклонения:', 'Не соответствует требованиям');
+        if (reason === null) return;
+        try {
+            await apiFetch(`/admin/tutors/${userId}/reject`, {
+                method: 'POST',
+                body: JSON.stringify({ reason }),
+            });
+            setApplications(prev => prev.filter(a => a.id !== userId));
+            loadAdminData();
+        } catch (err) {
+            alert(err.message);
+        }
     };
 
     const getFilteredUsers = (roleType) => {
@@ -76,6 +116,7 @@ export default function AdminPanel() {
     const isRu = language === 'ru';
     const tabs = [
         { id: 'overview', label: t('admin.overview'), icon: <ChartIcon /> },
+        { id: 'applications', label: isRu ? `Заявки (${applications.length})` : `Applications (${applications.length})`, icon: <StarIcon size={18} /> },
         { id: 'students', label: isRu ? 'Студенты' : 'Students', icon: <UsersIcon size={18} /> },
         { id: 'tutors', label: isRu ? 'Репетиторы' : 'Tutors', icon: <StarIcon size={18} /> },
         { id: 'schools', label: isRu ? 'Школы / Курсы' : 'Schools / Courses', icon: <BrainIcon size={18} /> },
@@ -130,11 +171,13 @@ export default function AdminPanel() {
                 {activeTab === 'overview' && (
                     <motion.div initial="hidden" animate="visible" variants={fadeUp}>
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                            <StatCard label={t('admin.activeUsers')} value={stats?.activeUsers || 0} icon={<UsersIcon size={20} />} trend="+12%" />
-                            <StatCard label={t('admin.totalSessions')} value={stats?.totalSessions || 0} icon={<BrainIcon size={20} />} trend="+8%" />
-                            <StatCard label={t('admin.avgRating')} value={stats?.avgRating?.toFixed(1) || '—'} icon={<StarIcon size={20} />} />
-                            <StatCard label={t('admin.reports')} value={stats?.pendingReports || 0} icon={<AlertTriangleIcon size={20} />} alert />
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                            <StatCard label={t('admin.activeUsers')} value={stats?.activeUsers || 0} icon={<UsersIcon size={20} />} />
+                            <StatCard label={isRu ? 'Студенты' : 'Students'} value={stats?.studentsCount || 0} icon={<UsersIcon size={20} />} />
+                            <StatCard label={isRu ? 'Репетиторы ✓' : 'Tutors ✓'} value={stats?.tutorsApproved || 0} icon={<StarIcon size={20} />} />
+                            <StatCard label={isRu ? 'На модерации' : 'Pending'} value={stats?.tutorsPending || 0} icon={<StarIcon size={20} />} alert={stats?.tutorsPending > 0} />
+                            <StatCard label={isRu ? 'Сессий завершено' : 'Completed'} value={stats?.completedSessions || 0} icon={<BrainIcon size={20} />} />
+                            <StatCard label={t('admin.reports')} value={stats?.pendingReports || 0} icon={<AlertTriangleIcon size={20} />} alert={stats?.pendingReports > 0} />
                         </div>
 
                         {/* Charts placeholder */}
@@ -189,6 +232,46 @@ export default function AdminPanel() {
                                 </div>
                             </div>
                         </div>
+                    </motion.div>
+                )}
+
+                {activeTab === 'applications' && (
+                    <motion.div initial="hidden" animate="visible" variants={fadeUp} className="space-y-4">
+                        {applications.length === 0 ? (
+                            <div className="glass-card p-12 text-center text-white/40">Нет заявок на модерации</div>
+                        ) : applications.map(app => (
+                            <div key={app.id} className="glass-card p-6">
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                                    <div>
+                                        <h3 className="font-bold text-lg">{app.name}</h3>
+                                        <p className="text-white/40 text-sm">{app.email} · {app.phone}</p>
+                                        <p className="text-neon/70 text-sm mt-2">
+                                            <a href={app.portfolioUrl} target="_blank" rel="noopener noreferrer" className="underline">{app.portfolioUrl}</a>
+                                        </p>
+                                        <p className="text-white/50 text-sm mt-2">{app.city} · {app.teachingFormat} · {app.hourlyRate} сом/ч</p>
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            {app.teachSkills?.map(s => (
+                                                <span key={s} className="text-xs px-2 py-0.5 rounded bg-neon/10 text-neon/80">{s}</span>
+                                            ))}
+                                        </div>
+                                        {app.verificationDocUrl && (
+                                            <a href={resolveFileUrl(app.verificationDocUrl)} target="_blank" rel="noopener noreferrer"
+                                                className="inline-block mt-3 text-sm text-neon underline">Открыть документ</a>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2 flex-shrink-0">
+                                        <button onClick={() => handleApproveTutor(app.id)}
+                                            className="px-4 py-2 rounded-xl bg-neon text-black font-bold text-sm hover:bg-neon/90">
+                                            Одобрить
+                                        </button>
+                                        <button onClick={() => handleRejectTutor(app.id)}
+                                            className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 text-sm">
+                                            Отклонить
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </motion.div>
                 )}
 

@@ -27,21 +27,8 @@ export default function Navbar({ onProfileClick, onUpgradeClick }) {
         }
     }, [isDarkMode]);
 
-    const handleProfileClick = (e) => {
-        // Only track if authenticated
-        if (isAuthenticated) {
-            const clicks = parseInt(sessionStorage.getItem('profileClicks') || '0') + 1;
-            sessionStorage.setItem('profileClicks', clicks.toString());
-
-            if (clicks % 3 === 0) {
-                // Don't navigate, show modal instead? 
-                // The user said "вылазила на экран пользователя каждый 3 раз при нажатии кнопки профиля"
-                // Usually this means it shows UPON clicking, but maybe also navigates.
-                // I'll trigger the modal and still allow navigation if desired, or just show modal.
-                // Let's trigger the modal.
-                if (onProfileClick) onProfileClick();
-            }
-        }
+    const handleProfileClick = () => {
+        // Profile click — no special behavior
     };
 
     const handleLogout = () => {

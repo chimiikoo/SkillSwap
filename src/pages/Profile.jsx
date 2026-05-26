@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
 import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon, HeartIcon, UserIcon } from '../components/Icons';
-import { VerifiedBadge, PremiumBadge } from '../components/VerifiedBadge';
+import { VerifiedBadge, PremiumBadge, isTutorVerified } from '../components/VerifiedBadge';
 import { UNIVERSITIES } from '../data/universities';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 import TopUpModal from '../components/TopUpModal';
@@ -134,6 +134,18 @@ export default function Profile() {
             <div className="absolute top-16 left-0 right-0 h-[200px] bg-glow-top pointer-events-none" />
 
             <div className="page-container relative z-10 max-w-3xl">
+                {(user?.userType === 'tutor' || user?.userType === 'school') && user?.tutorStatus === 'pending' && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-200/90 text-sm">
+                        <strong>Профиль на модерации.</strong> После проверки (24–48 ч) вы появитесь в поиске и рекомендациях.
+                    </motion.div>
+                )}
+                {user?.tutorStatus === 'rejected' && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
+                        Заявка отклонена: {user.tutorRejectReason || 'Свяжитесь с поддержкой.'}
+                    </motion.div>
+                )}
                 {user?.userType === 'school' && !isEditing ? (
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="relative shrink-0 group">
@@ -143,7 +155,7 @@ export default function Profile() {
                                 </div>
                             </div>
                             <div className="absolute -bottom-2 right-2">
-                                <VerifiedBadge size={28} className="drop-shadow-[0_0_8px_rgba(163,255,18,0.5)]" />
+                                {isTutorVerified(user) && <VerifiedBadge size={28} className="drop-shadow-[0_0_8px_rgba(163,255,18,0.5)]" />}
                             </div>
                             <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" />
                         </motion.div>
@@ -210,7 +222,7 @@ export default function Profile() {
                         <div className="flex items-center justify-between gap-4">
                             <h1 className="font-display text-3xl font-bold flex items-center gap-2 flex-wrap">
                                 <span className="text-neon">{user?.name}</span>
-                                {user?.userType === 'tutor' && <VerifiedBadge size={22} />}
+                                {isTutorVerified(user) && <VerifiedBadge size={22} />}
                                 {user?.isPremium && <PremiumBadge size={22} />}
                             </h1>
                             <button
@@ -255,9 +267,9 @@ export default function Profile() {
                         <div className="text-white/30 text-xs">{t('profile.ratingLabel')}</div>
                     </motion.div>
                     <motion.div variants={fadeUp} className="glass-card p-4 text-center group">
-                        <RocketIcon size={20} className="mx-auto mb-2" />
-                        <div className="text-xl font-bold">{user?.sessionsCount || 0}</div>
-                        <div className="text-white/30 text-xs">{t('profile.sessionsLabel')}</div>
+                        <HeartIcon size={20} className="mx-auto mb-2 text-red-500" filled />
+                        <div className="text-xl font-bold">{user?.followersCount || 0}</div>
+                        <div className="text-white/30 text-xs">Подписчиков</div>
                     </motion.div>
                 </ScrollSection>
                 )}
