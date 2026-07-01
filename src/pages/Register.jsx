@@ -66,8 +66,8 @@ export default function Register() {
                     portfolioUrl: form.portfolioUrl.trim(),
                 };
                 const result = await register(payload);
-                if (result?.token) {
-                    navigate('/dashboard');
+                if (result?.token || result?.user || result?.message) {
+                    navigate('/dashboard', { replace: true });
                     return;
                 }
                 setStep(5);
@@ -77,7 +77,7 @@ export default function Register() {
                 setLoading(false);
             }
         } else if (step === 5) {
-            navigate('/dashboard');
+            navigate('/dashboard', { replace: true });
         }
     };
 

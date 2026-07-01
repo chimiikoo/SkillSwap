@@ -9,11 +9,12 @@ const API_URL = buildApiUrl('');
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [token, setToken] = useState(localStorage.getItem('skillswap_token'));
+    const [token, setToken] = useState(() => localStorage.getItem('skillswap_token'));
     const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
         if (token) {
+            setLoading(true);
             fetchProfile();
             fetchUnreadCount();
         } else {
@@ -119,9 +120,14 @@ export function AuthProvider({ children }) {
 
         const data = await handleResponse(res);
 
-        localStorage.setItem('skillswap_token', data.token);
-        setToken(data.token);
-        setUser(data.user);
+        if (data?.token) {
+            localStorage.setItem('skillswap_token', data.token);
+            setToken(data.token);
+            setUser(data.user || null);
+        } else if (data?.user) {
+            setUser(data.user);
+        }
+        setLoading(false);
         return data;
     };
 
@@ -142,8 +148,11 @@ export function AuthProvider({ children }) {
         if (data && data.token) {
             localStorage.setItem('skillswap_token', data.token);
             setToken(data.token);
+            setUser(data.user || null);
+        } else if (data?.user) {
             setUser(data.user);
         }
+        setLoading(false);
         return data;
     };
 
@@ -157,9 +166,14 @@ export function AuthProvider({ children }) {
 
         const data = await handleResponse(res);
 
-        localStorage.setItem('skillswap_token', data.token);
-        setToken(data.token);
-        setUser(data.user);
+        if (data?.token) {
+            localStorage.setItem('skillswap_token', data.token);
+            setToken(data.token);
+            setUser(data.user || null);
+        } else if (data?.user) {
+            setUser(data.user);
+        }
+        setLoading(false);
         return data;
     };
 
@@ -212,7 +226,7 @@ export function AuthProvider({ children }) {
             unreadCount,
             refreshUnreadCount: fetchUnreadCount,
             isAdmin: user?.role === 'admin',
-            isAuthenticated: !!user
+            isAuthenticated: Boolean(token || user)
         }}>
             {children}
         </AuthContext.Provider>
