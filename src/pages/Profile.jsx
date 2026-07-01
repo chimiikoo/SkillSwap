@@ -7,7 +7,6 @@ import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
 import { SkillIcon, CoinIcon, StarIcon, RocketIcon, SparklesIcon, CameraIcon, HeartIcon, UserIcon } from '../components/Icons';
 import { VerifiedBadge, PremiumBadge, isTutorVerified } from '../components/VerifiedBadge';
-import { UNIVERSITIES } from '../data/universities';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
 import TopUpModal from '../components/TopUpModal';
 
@@ -36,7 +35,6 @@ export default function Profile() {
     const { t } = useLanguage();
     const [form, setForm] = useState({
         name: user?.name || '',
-        university: user?.university || '',
         bio: user?.bio || '',
         teachSkills: user?.teachSkills || [],
         learnSkills: user?.learnSkills || [],
@@ -293,19 +291,6 @@ export default function Profile() {
                                 <input type="text" value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); setSaved(false); }} className="input-dark" />
                             </div>
                             <div>
-                                <label className="text-sm text-white/40 mb-1.5 block">{t('profile.universityLabel')}</label>
-                                <select
-                                    value={form.university}
-                                    onChange={e => { setForm({ ...form, university: e.target.value }); setSaved(false); }}
-                                    className="input-dark"
-                                >
-                                    <option value="">{t('profile.universityPh')}</option>
-                                    {UNIVERSITIES.map(u => (
-                                        <option key={u} value={u}>{u}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
                                 <label className="text-sm text-white/40 mb-1.5 block">{t('profile.bioLabel')}</label>
                                 <textarea value={form.bio} onChange={e => { setForm({ ...form, bio: e.target.value }); setSaved(false); }} className="input-dark resize-none" rows="3" />
                             </div>
@@ -363,15 +348,6 @@ export default function Profile() {
                         >
                             <div className="glass-card p-6 border-neon/5 bg-neon/[0.02]">
                                 <div className="space-y-4">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 rounded-lg bg-neon/10 text-neon">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 0 1 .665 6.479A11.952 11.952 0 0 0 12 20.083c-2.455 0-4.79-.738-6.825-2.026a12.083 12.083 0 0 1 .665-6.479L12 14z" /></svg>
-                                        </div>
-                                        <div>
-                                            <p className="text-white/30 text-xs uppercase tracking-widest mb-1">{t('profile.universityLabel')}</p>
-                                            <p className="text-white font-medium">{user?.university || 'Не указано'}</p>
-                                        </div>
-                                    </div>
                                     <div className="flex items-start gap-4">
                                         <div className="p-2 rounded-lg bg-neon/10 text-neon">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
