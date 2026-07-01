@@ -7,6 +7,7 @@ import { SKILL_CATEGORIES } from '../data/skills';
 import { SKILL_CAT_KEYS } from '../i18n/translations';
 import { UNIVERSITIES } from '../data/universities';
 import { SkillIcon, GraduationIcon, UsersIcon, GlobeIcon, MapPinIcon, RocketIcon, EyeIcon, EyeOffIcon } from '../components/Icons';
+import { normalizeEmail } from '../utils/email';
 
 export default function Register() {
     const { register, verifyAccount } = useAuth();
@@ -59,7 +60,17 @@ export default function Register() {
 
         if (step === 4) {
             try {
-                const result = await register(form);
+                const payload = {
+                    ...form,
+                    email: normalizeEmail(form.email),
+                    name: form.name.trim(),
+                    bio: form.bio.trim(),
+                    city: form.city.trim(),
+                    phone: form.phone.trim(),
+                    portfolioUrl: form.portfolioUrl.trim(),
+                    university: form.university.trim(),
+                };
+                const result = await register(payload);
                 if (result?.code) {
                     setCode(result.code);
                     setEmailFailed(true);
@@ -72,7 +83,7 @@ export default function Register() {
             }
         } else if (step === 5) {
             try {
-                const data = await verifyAccount(form.email, code);
+                const data = await verifyAccount(normalizeEmail(form.email), code);
                 if (form.verificationDocFile && data?.token) {
                     const fd = new FormData();
                     fd.append('verificationDoc', form.verificationDocFile);
@@ -296,7 +307,7 @@ export default function Register() {
                                 <div>
                                     <label className="block text-sm text-white/50 mb-2">{t('register.email')}</label>
                                     <input type="email" value={form.email}
-                                        onChange={e => setForm({ ...form, email: e.target.value })}
+                                        onChange={e => setForm({ ...form, email: normalizeEmail(e.target.value) })}
                                         className="input-dark" placeholder="your@email.com" required />
                                 </div>
                                 <div>
@@ -321,7 +332,10 @@ export default function Register() {
                                 </div>
                                  {form.userType !== 'school' && (
                                     <div>
-                                        <label className="block text-sm text-white/50 mb-2">{t('register.university')}</label>
+                                        <label className="block text-sm text-white/50 mb-2 flex items-center gap-2">
+                                            <span>{t('register.university')}</span>
+                                            <span className="text-[11px] text-white/35">{t('register.universityOptional') || 'необязательно'}</span>
+                                        </label>
                                         <select value={form.university}
                                             onChange={e => setForm({ ...form, university: e.target.value })}
                                             className="input-dark">

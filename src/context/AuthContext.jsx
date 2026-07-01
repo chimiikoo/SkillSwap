@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { normalizeEmail } from '../utils/email';
 
 const AuthContext = createContext(null);
 
@@ -108,10 +109,11 @@ export function AuthProvider({ children }) {
     };
 
     const login = async (email, password) => {
+        const normalizedEmail = normalizeEmail(email);
         const res = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email: normalizedEmail, password })
         });
 
         const data = await handleResponse(res);
@@ -123,10 +125,14 @@ export function AuthProvider({ children }) {
     };
 
     const register = async (userData) => {
+        const payload = {
+            ...userData,
+            email: normalizeEmail(userData?.email),
+        };
         const res = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(userData)
+            body: JSON.stringify(payload)
         });
 
         const data = await handleResponse(res);
@@ -141,10 +147,11 @@ export function AuthProvider({ children }) {
     };
 
     const verifyAccount = async (email, code) => {
+        const normalizedEmail = normalizeEmail(email);
         const res = await fetch(`${API_URL}/auth/verify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, code })
+            body: JSON.stringify({ email: normalizedEmail, code })
         });
 
         const data = await handleResponse(res);

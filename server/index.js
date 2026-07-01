@@ -21,6 +21,7 @@ import {
     MIN_MATCH_DISPLAY_SCORE,
     PLATFORM_FEE_PERCENT,
 } from './matchingUtils.js';
+import { normalizeEmail } from './authUtils.js';
 
 dotenv.config();
 
@@ -535,8 +536,9 @@ async function sendVerificationEmail(email, code) {
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat, hourlyRate, phone, portfolioUrl, verificationDocUrl } = req.body;
+        const normalizedEmail = normalizeEmail(email);
 
-        if (!email || !password || !name) {
+        if (!normalizedEmail || !password || !name) {
             return res.status(400).json({ error: 'Email, пароль и имя обязательны' });
         }
 
@@ -547,7 +549,7 @@ app.post('/api/auth/register', async (req, res) => {
             if (!experience) return res.status(400).json({ error: 'Укажите опыт преподавания' });
         }
 
-        const existing = queryOne('SELECT id FROM users WHERE email = ?', [email]);
+        const existing = queryOne('SELECT id FROM users WHERE LOWER(TRIM(email)) = ?', [normalizedEmail]);
         if (existing) return res.status(400).json({ error: 'Email уже зарегистрирован' });
 
         const id = uuidv4();
@@ -560,7 +562,7 @@ app.post('/api/auth/register', async (req, res) => {
         db.run(`
       INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, isVerified, verificationCode, userType, experience, city, teachingFormat, hourlyRate, tutorStatus, phone, portfolioUrl, verificationDocUrl)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, email, hashedPassword, name, university || '', bio || '',
+    `, [id, normalizedEmail, hashedPassword, name, university || '', bio || '',
             JSON.stringify(normalizedTeach), JSON.stringify(normalizedLearn),
             0, verificationCode,
             userType || 'student', experience || 0, city || '', teachingFormat || '', hourlyRate || 0,
@@ -572,7 +574,7 @@ app.post('/api/auth/register', async (req, res) => {
         let emailSent = false;
         let emailSimulated = false;
         try {
-            const result = await sendVerificationEmail(email, verificationCode);
+            const result = await sendVerificationEmail(normalizedEmail, verificationCode);
             emailSent = result?.sent || false;
             emailSimulated = result?.simulated || false;
         } catch (emailErr) {
@@ -580,7 +582,7 @@ app.post('/api/auth/register', async (req, res) => {
             emailSent = false;
         }
 
-        const basePayload = { message: 'Code sent', email, tutorStatus };
+        const basePayload = { message: 'Code sent', email: normalizedEmail, tutorStatus };
         if (emailSent) {
             res.json(basePayload);
         } else if (emailSimulated) {
@@ -597,7 +599,8 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/verify', async (req, res) => {
     try {
         const { email, code } = req.body;
-        const user = queryOne('SELECT * FROM users WHERE email = ?', [email]);
+        const normalizedEmail = normalizeEmail(email);
+        const user = queryOne('SELECT * FROM users WHERE LOWER(TRIM(email)) = ?', [normalizedEmail]);
 
         if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
         if (user.isVerified) return res.status(400).json({ error: 'Аккаунт уже подтвержден' });
@@ -619,7 +622,8 @@ app.post('/api/auth/verify', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = queryOne('SELECT * FROM users WHERE email = ?', [email]);
+        const normalizedEmail = normalizeEmail(email);
+        const user = queryOne('SELECT * FROM users WHERE LOWER(TRIM(email)) = ?', [normalizedEmail]);
 
         if (!user) return res.status(400).json({ error: 'Неверный email или пароль' });
         if (user.blocked) return res.status(403).json({ error: 'Аккаунт заблокирован' });
