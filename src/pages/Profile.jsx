@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { buildApiUrl } from '../utils/api';
 import { useLanguage } from '../context/LanguageContext';
 import { Link } from 'react-router-dom';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
@@ -103,8 +104,7 @@ export default function Profile() {
         formData.append('avatar', file);
 
         try {
-            const API_BASE = import.meta.env.VITE_API_URL || '/api';
-            const res = await fetch(`${API_BASE}/users/avatar`, {
+            const res = await fetch(buildApiUrl('/users/avatar'), {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('skillswap_token')}`

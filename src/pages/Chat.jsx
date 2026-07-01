@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { buildApiUrl } from '../utils/api';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RocketIcon, SendIcon, MicIcon, PaperclipIcon, ImageIcon, FileIcon, PlayIcon, PauseIcon, PencilIcon, TrashIcon } from '../components/Icons';
@@ -239,8 +240,7 @@ export default function Chat() {
             const formData = new FormData();
             formData.append('file', file);
 
-            const API_BASE = import.meta.env.VITE_API_URL || '/api';
-            const res = await fetch(`${API_BASE}/chat/upload`, {
+            const res = await fetch(buildApiUrl('/chat/upload'), {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('skillswap_token')}`

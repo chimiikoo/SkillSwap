@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { buildApiUrl } from '../utils/api';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
@@ -100,10 +101,9 @@ export default function CommunityDetail() {
         if (!file) return;
         setUploading(true);
         try {
-            const API_BASE = import.meta.env.VITE_API_URL || '/api';
             const formData = new FormData();
             formData.append('file', file);
-            const uploadRes = await fetch(`${API_BASE}/communities/${id}/upload`, {
+            const uploadRes = await fetch(buildApiUrl(`/communities/${id}/upload`), {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('skillswap_token')}` },
                 body: formData

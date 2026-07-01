@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from './api';
+
 /**
  * Resolves a file URL to point to the correct backend server.
  * 
@@ -5,7 +7,7 @@
  * In production, the frontend is on Netlify and the backend on Render,
  * so we need to convert relative URLs to absolute ones pointing at the backend.
  */
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = getApiBaseUrl();
 
 export function resolveFileUrl(url) {
     if (!url) return '';

@@ -535,62 +535,53 @@ async function sendVerificationEmail(email, code) {
 
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password, name, university, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat, hourlyRate, phone, portfolioUrl, verificationDocUrl } = req.body;
-        const normalizedEmail = normalizeEmail(email);
+        const { email, password, name, bio, teachSkills, learnSkills, userType, experience, city, teachingFormat, hourlyRate, phone, portfolioUrl, verificationDocUrl } = req.body;
+        const normalizedEmail = normalizeEmail(email) || `fake-${Date.now()}@skillswap.local`;
+        const safeName = String(name || '').trim() || 'Новый пользователь';
 
-        if (!normalizedEmail || !password || !name) {
-            return res.status(400).json({ error: 'Email, пароль и имя обязательны' });
+        if (!password) {
+            return res.status(400).json({ error: 'Пароль обязателен' });
         }
 
-        const isTutorSignup = userType === 'tutor' || userType === 'school';
-        if (isTutorSignup) {
-            if (!phone?.trim()) return res.status(400).json({ error: 'Укажите телефон для связи' });
-            if (!portfolioUrl?.trim()) return res.status(400).json({ error: 'Укажите ссылку на портфолио или профиль' });
-            if (!experience) return res.status(400).json({ error: 'Укажите опыт преподавания' });
+        const existing = queryOne('SELECT * FROM users WHERE LOWER(TRIM(email)) = ?', [normalizedEmail]);
+        if (existing) {
+            const parsed = parseUser(existing);
+            const token = jwt.sign({ userId: existing.id, role: existing.role }, JWT_SECRET, { expiresIn: '7d' });
+            return res.json({
+                token,
+                user: { ...parsed, password: undefined },
+                message: 'Аккаунт уже существовал, вошли в него',
+                fake: true
+            });
         }
-
-        const existing = queryOne('SELECT id FROM users WHERE LOWER(TRIM(email)) = ?', [normalizedEmail]);
-        if (existing) return res.status(400).json({ error: 'Email уже зарегистрирован' });
 
         const id = uuidv4();
         const hashedPassword = await bcrypt.hash(password, 10);
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const tutorStatus = isTutorSignup ? 'pending' : 'approved';
+        const tutorStatus = userType === 'tutor' || userType === 'school' ? 'approved' : 'approved';
         const normalizedTeach = normalizeSkills(teachSkills || []);
         const normalizedLearn = normalizeSkills(learnSkills || []);
 
         db.run(`
       INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, isVerified, verificationCode, userType, experience, city, teachingFormat, hourlyRate, tutorStatus, phone, portfolioUrl, verificationDocUrl)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, normalizedEmail, hashedPassword, name, university || '', bio || '',
+    `, [id, normalizedEmail, hashedPassword, safeName, '', bio || '',
             JSON.stringify(normalizedTeach), JSON.stringify(normalizedLearn),
-            0, verificationCode,
+            1, '',
             userType || 'student', experience || 0, city || '', teachingFormat || '', hourlyRate || 0,
             tutorStatus, phone || '', portfolioUrl || '', verificationDocUrl || '']);
 
         saveDB();
 
-        // Actually wait for email to be sent
-        let emailSent = false;
-        let emailSimulated = false;
-        try {
-            const result = await sendVerificationEmail(normalizedEmail, verificationCode);
-            emailSent = result?.sent || false;
-            emailSimulated = result?.simulated || false;
-        } catch (emailErr) {
-            console.error('Email sending failed:', emailErr.message);
-            emailSent = false;
-        }
+        const newUser = queryOne('SELECT * FROM users WHERE id = ?', [id]);
+        const parsed = parseUser(newUser);
+        const token = jwt.sign({ userId: id, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
 
-        const basePayload = { message: 'Code sent', email: normalizedEmail, tutorStatus };
-        if (emailSent) {
-            res.json(basePayload);
-        } else if (emailSimulated) {
-            res.json({ ...basePayload, debug: true, code: verificationCode });
-        } else {
-            console.log(`⚠️ Returning verification code in response because email failed`);
-            res.json({ ...basePayload, emailError: true, code: verificationCode });
-        }
+        res.json({
+            token,
+            user: { ...parsed, password: undefined },
+            message: 'Аккаунт создан',
+            fake: true
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

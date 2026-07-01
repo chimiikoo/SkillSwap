@@ -4,20 +4,21 @@ import { useNavigate, Link } from 'react-router-dom';
 import { VerifiedBadge, isTutorVerified } from '../components/VerifiedBadge';
 import { SkillIcon } from '../components/Icons';
 import { resolveFileUrl } from '../utils/resolveFileUrl';
+import { buildApiUrl } from '../utils/api';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
 };
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = buildApiUrl('');
 
 export default function Landing() {
     const navigate = useNavigate();
     const [featured, setFeatured] = useState([]);
 
     useEffect(() => {
-        fetch(`${API_URL}/users/featured`)
+        fetch(buildApiUrl('/users/featured'))
             .then(r => r.json())
             .then(d => setFeatured(d.tutors || []))
             .catch(() => setFeatured([]));

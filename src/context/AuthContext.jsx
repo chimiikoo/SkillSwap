@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { normalizeEmail } from '../utils/email';
+import { buildApiUrl } from '../utils/api';
 
 const AuthContext = createContext(null);
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = buildApiUrl('');
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
@@ -50,7 +51,7 @@ export function AuthProvider({ children }) {
 
     const fetchProfile = async () => {
         try {
-            const res = await fetch(`${API_URL}/auth/me`, {
+            const res = await fetch(buildApiUrl('/auth/me'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await handleResponse(res);
@@ -70,7 +71,7 @@ export function AuthProvider({ children }) {
     const fetchUnreadCount = async () => {
         if (!token) return;
         try {
-            const res = await fetch(`${API_URL}/chat/unread-count`, {
+            const res = await fetch(buildApiUrl('/chat/unread-count'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await handleResponse(res);
@@ -110,7 +111,7 @@ export function AuthProvider({ children }) {
 
     const login = async (email, password) => {
         const normalizedEmail = normalizeEmail(email);
-        const res = await fetch(`${API_URL}/auth/login`, {
+        const res = await fetch(buildApiUrl('/auth/login'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: normalizedEmail, password })
@@ -129,7 +130,7 @@ export function AuthProvider({ children }) {
             ...userData,
             email: normalizeEmail(userData?.email),
         };
-        const res = await fetch(`${API_URL}/auth/register`, {
+        const res = await fetch(buildApiUrl('/auth/register'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -148,7 +149,7 @@ export function AuthProvider({ children }) {
 
     const verifyAccount = async (email, code) => {
         const normalizedEmail = normalizeEmail(email);
-        const res = await fetch(`${API_URL}/auth/verify`, {
+        const res = await fetch(buildApiUrl('/auth/verify'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: normalizedEmail, code })
@@ -169,7 +170,7 @@ export function AuthProvider({ children }) {
     };
 
     const updateProfile = async (updates) => {
-        const res = await fetch(`${API_URL}/users/profile`, {
+        const res = await fetch(buildApiUrl('/users/profile'), {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -185,7 +186,7 @@ export function AuthProvider({ children }) {
     };
 
     const apiFetch = async (url, options = {}) => {
-        const res = await fetch(`${API_URL}${url}`, {
+        const res = await fetch(buildApiUrl(url), {
             ...options,
             headers: {
                 'Content-Type': 'application/json',

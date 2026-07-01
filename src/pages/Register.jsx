@@ -5,12 +5,11 @@ import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SKILL_CATEGORIES } from '../data/skills';
 import { SKILL_CAT_KEYS } from '../i18n/translations';
-import { UNIVERSITIES } from '../data/universities';
 import { SkillIcon, GraduationIcon, UsersIcon, GlobeIcon, MapPinIcon, RocketIcon, EyeIcon, EyeOffIcon } from '../components/Icons';
 import { normalizeEmail } from '../utils/email';
 
 export default function Register() {
-    const { register, verifyAccount } = useAuth();
+    const { register } = useAuth();
     const { t } = useLanguage();
     const navigate = useNavigate();
 
@@ -28,8 +27,6 @@ export default function Register() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [activeCategory, setActiveCategory] = useState(0);
-    const [code, setCode] = useState('');
-    const [emailFailed, setEmailFailed] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     const [form, setForm] = useState({
@@ -37,7 +34,6 @@ export default function Register() {
         name: '',
         email: '',
         password: '',
-        university: '',
         bio: '',
         teachSkills: [],
         learnSkills: [],
@@ -62,18 +58,17 @@ export default function Register() {
             try {
                 const payload = {
                     ...form,
-                    email: normalizeEmail(form.email),
-                    name: form.name.trim(),
+                    email: normalizeEmail(form.email) || `fake-${Date.now()}@skillswap.local`,
+                    name: form.name.trim() || 'Новый пользователь',
                     bio: form.bio.trim(),
                     city: form.city.trim(),
                     phone: form.phone.trim(),
                     portfolioUrl: form.portfolioUrl.trim(),
-                    university: form.university.trim(),
                 };
                 const result = await register(payload);
-                if (result?.code) {
-                    setCode(result.code);
-                    setEmailFailed(true);
+                if (result?.token) {
+                    navigate('/dashboard');
+                    return;
                 }
                 setStep(5);
             } catch (err) {
@@ -82,23 +77,7 @@ export default function Register() {
                 setLoading(false);
             }
         } else if (step === 5) {
-            try {
-                const data = await verifyAccount(normalizeEmail(form.email), code);
-                if (form.verificationDocFile && data?.token) {
-                    const fd = new FormData();
-                    fd.append('verificationDoc', form.verificationDocFile);
-                    await fetch(`${import.meta.env.VITE_API_URL || '/api'}/users/verification-doc`, {
-                        method: 'POST',
-                        headers: { Authorization: `Bearer ${data.token}` },
-                        body: fd,
-                    });
-                }
-                navigate('/dashboard');
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
+            navigate('/dashboard');
         }
     };
 
@@ -306,9 +285,9 @@ export default function Register() {
                                 </div>
                                 <div>
                                     <label className="block text-sm text-white/50 mb-2">{t('register.email')}</label>
-                                    <input type="email" value={form.email}
-                                        onChange={e => setForm({ ...form, email: normalizeEmail(e.target.value) })}
-                                        className="input-dark" placeholder="your@email.com" required />
+                                    <input type="text" value={form.email}
+                                        onChange={e => setForm({ ...form, email: e.target.value })}
+                                        className="input-dark" placeholder="skillswap@local" required />
                                 </div>
                                 <div>
                                     <label className="block text-sm text-white/50 mb-2">{t('register.password')}</label>
@@ -330,22 +309,6 @@ export default function Register() {
                                         </button>
                                     </div>
                                 </div>
-                                 {form.userType !== 'school' && (
-                                    <div>
-                                        <label className="block text-sm text-white/50 mb-2 flex items-center gap-2">
-                                            <span>{t('register.university')}</span>
-                                            <span className="text-[11px] text-white/35">{t('register.universityOptional') || 'необязательно'}</span>
-                                        </label>
-                                        <select value={form.university}
-                                            onChange={e => setForm({ ...form, university: e.target.value })}
-                                            className="input-dark">
-                                            <option value="">{t('register.universityPh')}</option>
-                                            {UNIVERSITIES.map(u => (
-                                                <option key={u} value={u}>{u}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
                                 <div>
                                     <label className="block text-sm text-white/50 mb-2">{t('register.bio')}</label>
                                     <textarea value={form.bio}
