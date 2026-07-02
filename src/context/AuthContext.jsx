@@ -56,13 +56,19 @@ export function AuthProvider({ children }) {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await handleResponse(res);
-            if (data) {
+            if (data?.user) {
                 setUser(data.user);
             }
         } catch (err) {
             console.error('Auth error:', err);
-            if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+            // Only logout on explicit 401 or token errors, not on network failures
+            const is401 = err.message?.includes('401') || err.message?.includes('Unauthorized') || err.message?.includes('Invalid token');
+            if (is401) {
+                console.warn('Token invalid, logging out');
                 logout();
+            } else {
+                // For other errors (network, etc), just continue - user still has token stored
+                console.warn('Profile fetch failed but keeping auth:', err.message);
             }
         } finally {
             setLoading(false);

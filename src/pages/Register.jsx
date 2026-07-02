@@ -66,7 +66,9 @@ export default function Register() {
                     portfolioUrl: form.portfolioUrl.trim(),
                 };
                 const result = await register(payload);
-                if (result?.token || result?.user || result?.message) {
+                if (result) {
+                    // Registration successful - redirect to dashboard
+                    await new Promise(r => setTimeout(r, 100));
                     navigate('/dashboard', { replace: true });
                     return;
                 }
@@ -77,6 +79,7 @@ export default function Register() {
                 setLoading(false);
             }
         } else if (step === 5) {
+            await new Promise(r => setTimeout(r, 100));
             navigate('/dashboard', { replace: true });
         }
     };

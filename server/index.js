@@ -561,6 +561,7 @@ app.post('/api/auth/register', async (req, res) => {
         const normalizedTeach = normalizeSkills(teachSkills || []);
         const normalizedLearn = normalizeSkills(learnSkills || []);
 
+        // For soft demo mode: always set isVerified=1 so login works immediately
         db.run(`
       INSERT INTO users (id, email, password, name, university, bio, teachSkills, learnSkills, isVerified, verificationCode, userType, experience, city, teachingFormat, hourlyRate, tutorStatus, phone, portfolioUrl, verificationDocUrl)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -573,13 +574,16 @@ app.post('/api/auth/register', async (req, res) => {
         saveDB();
 
         const newUser = queryOne('SELECT * FROM users WHERE id = ?', [id]);
+        if (!newUser) {
+            return res.status(500).json({ error: 'Failed to create user' });
+        }
         const parsed = parseUser(newUser);
         const token = jwt.sign({ userId: id, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
 
         res.json({
             token,
-            user: { ...parsed, password: undefined },
-            message: 'Аккаунт создан',
+            user: { ...parsed, isVerified: 1, password: undefined },
+            message: 'Аккаунт создан и готов к использованию',
             fake: true
         });
     } catch (err) {
@@ -619,14 +623,10 @@ app.post('/api/auth/login', async (req, res) => {
         if (!user) return res.status(400).json({ error: 'Неверный email или пароль' });
         if (user.blocked) return res.status(403).json({ error: 'Аккаунт заблокирован' });
 
-        // Check verification (skip for old users where isVerified might be null/undefined/0 but allow admins/demo users for now? Let's assume admins are verified)
-        // Actually, we should check if isVerified is strictly 0.
-        // Demo users created at start have isVerified null (default 0).
-        // I will update Demo users to be verified in initDB, but for now:
-        if (user.isVerified === 0 && user.role !== 'admin') {
-            // Optional: allow re-sending code here if needed, but for now just block login
-            return res.status(403).json({ error: 'Email не подтвержден. Проверьте почту.' });
-        }
+        // For soft demo mode: allow login even if not verified (isVerified is null/0)
+        // if (user.isVerified === 0 && user.role !== 'admin') {
+        //     return res.status(403).json({ error: 'Email не подтвержден. Проверьте почту.' });
+        // }
 
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return res.status(400).json({ error: 'Неверный email или пароль' });
